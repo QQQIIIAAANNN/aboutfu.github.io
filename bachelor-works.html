@@ -40,17 +40,22 @@
         /* 書本閱覽 modal */
         #book-viewer { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity .3s ease; }
         #book-viewer.open { display: flex; opacity: 1; }
-        #book-viewer .book-container { max-width: 95vw; max-height: 90vh; width: 900px; position: relative; display: flex; align-items: center; justify-content: center; }
-        #book-viewer .book-page-img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 4px; box-shadow: 0 24px 48px rgba(0,0,0,.4); background: #1a1a1a; }
-        #book-viewer .btn-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s, transform .2s; z-index: 2; }
-        #book-viewer .btn-nav:hover { background: rgba(255,255,255,.25); transform: translateY(-50%) scale(1.05); }
-        #book-viewer .btn-prev { left: -60px; }
-        #book-viewer .btn-next { right: -60px; }
-        @media (max-width: 1024px) { #book-viewer .btn-prev { left: 12px; } #book-viewer .btn-next { right: 12px; } }
-        #book-viewer .btn-close { position: absolute; top: -52px; right: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; z-index: 2; }
-        #book-viewer .btn-close:hover { background: rgba(255,255,255,.2); }
-        #book-viewer .book-title { position: absolute; top: -52px; left: 0; color: rgba(255,255,255,.9); font-family: 'Noto Serif TC', serif; font-size: 1.1rem; font-weight: 400; }
-        #book-viewer .book-pagination { position: absolute; bottom: -44px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.6); font-size: 12px; letter-spacing: .1em; }
+        #book-viewer .book-container { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; }
+        #book-viewer .book-page-img { max-width: 92vw; max-height: 92vh; object-fit: contain; border-radius: 2px; box-shadow: 0 24px 64px rgba(0,0,0,0.6); background: #000; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        #book-viewer .btn-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 10002; }
+        #book-viewer .btn-nav:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); transform: translateY(-50%) scale(1.1); }
+        #book-viewer .btn-prev { left: 30px; }
+        #book-viewer .btn-next { right: 30px; }
+        @media (max-width: 1024px) { 
+            #book-viewer .btn-nav { width: 44px; height: 44px; }
+            #book-viewer .btn-prev { left: 15px; } 
+            #book-viewer .btn-next { right: 15px; } 
+            #book-viewer .book-page-img { max-width: 98vw; max-height: 80vh; }
+        }
+        #book-viewer .btn-close { position: fixed; top: 30px; right: 30px; width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,0.08); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; z-index: 10002; }
+        #book-viewer .btn-close:hover { background: rgba(220, 38, 38, 0.4); border-color: rgba(220, 38, 38, 0.6); transform: scale(1.1) rotate(90deg); }
+        #book-viewer .book-title { position: fixed; top: 35px; left: 40px; color: rgba(255,255,255,0.8); font-family: 'Noto Serif TC', serif; font-size: 1.2rem; font-weight: 400; letter-spacing: 0.05em; z-index: 10001; }
+        #book-viewer .book-pagination { position: fixed; bottom: 35px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; letter-spacing: 0.2em; z-index: 10001; background: rgba(0,0,0,0.3); padding: 6px 20px; border-radius: 999px; backdrop-filter: blur(4px); }
 
         /* Menu Overlay (match other pages) */
         #menu-overlay { position:fixed; inset:0; z-index:10000; background:rgba(245,243,238,.97); backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); opacity:0; pointer-events:none; transition:opacity .4s ease; overflow-y:auto; }
@@ -602,23 +607,42 @@
             currentPage = 0;
             const work = BACHELOR_WORKS[workIndex];
             titleEl.textContent = work.title;
-            imgEl.src = work.images[0];
-            imgEl.alt = work.title + ' — 1';
-            paginationEl.textContent = `1 / ${work.images.length}`;
+            
+            // 重置圖片狀態
+            imgEl.style.opacity = '0';
+            imgEl.style.transform = 'scale(0.95)';
+            
             viewer.classList.add('open');
             viewer.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
+            
             updateBookPage();
+            
+            gsap.to(viewer, { opacity: 1, duration: 0.4, ease: "power2.out" });
         }
 
         function updateBookPage() {
             const work = BACHELOR_WORKS[currentWorkIndex];
             if (!work || currentPage < 0 || currentPage >= work.images.length) return;
-            imgEl.src = work.images[currentPage];
-            imgEl.alt = work.title + ' — ' + (currentPage + 1);
-            paginationEl.textContent = `${currentPage + 1} / ${work.images.length}`;
-            document.getElementById('book-prev').style.visibility = currentPage === 0 ? 'hidden' : 'visible';
-            document.getElementById('book-next').style.visibility = currentPage === work.images.length - 1 ? 'hidden' : 'visible';
+            
+            // 預加載圖片以確保流暢度
+            const nextImg = new Image();
+            nextImg.src = work.images[currentPage];
+            
+            gsap.to(imgEl, { opacity: 0, scale: 0.98, duration: 0.2, ease: "power2.in", onComplete: () => {
+                imgEl.src = work.images[currentPage];
+                imgEl.alt = work.title + ' — ' + (currentPage + 1);
+                paginationEl.textContent = `${currentPage + 1} / ${work.images.length}`;
+                
+                imgEl.onload = () => {
+                    gsap.to(imgEl, { opacity: 1, scale: 1, duration: 0.5, ease: "power2.out" });
+                };
+            }});
+
+            document.getElementById('book-prev').style.opacity = currentPage === 0 ? '0.3' : '1';
+            document.getElementById('book-prev').style.pointerEvents = currentPage === 0 ? 'none' : 'auto';
+            document.getElementById('book-next').style.opacity = currentPage === work.images.length - 1 ? '0.3' : '1';
+            document.getElementById('book-next').style.pointerEvents = currentPage === work.images.length - 1 ? 'none' : 'auto';
         }
 
         function closeBookViewer() {

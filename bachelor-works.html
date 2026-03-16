@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FU. | Bachelor Selected Works</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&family=Syncopate:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #F5F3EE; color: #111; font-family: 'Manrope', sans-serif; overflow-x: hidden; cursor: none; }
+        ::selection { background: rgba(17,17,17,.9); color: #fff; }
+        #custom-cursor { position:fixed; top:0; left:0; width:12px; height:12px; background:#fff; border-radius:50%; pointer-events:none; z-index:10002; transform:translate(-50%,-50%); transition:width .3s cubic-bezier(.16,1,.3,1),height .3s cubic-bezier(.16,1,.3,1); mix-blend-mode:difference; }
+        #custom-cursor.hover { width:60px; height:60px; background:rgba(255,255,255,.1); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.5); }
+        .noise-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9998; background:url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E'); opacity:.025; mix-blend-mode:multiply; }
+        #webgl-canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1; pointer-events:none; opacity:.5; }
+        .nav-link-active { color:#111 !important; }
+        .chapter-label { font-family: 'Syncopate', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .3em; color: rgba(0,0,0,.3); text-transform: uppercase; }
+        .project-title-cn { font-family: 'Noto Serif TC', serif; font-size: 2rem; color: #111; line-height: 1.3; }
+        .project-desc { font-family: 'Noto Serif TC', serif; font-size: .95rem; line-height: 2; color: rgba(17,17,17,.6); font-weight: 300; }
+        .book-page { background: #FEFEFE; border: 1px solid rgba(0,0,0,.06); box-shadow: 0 4px 6px rgba(0,0,0,.04), 8px 8px 0 rgba(0,0,0,.02), 16px 16px 0 rgba(0,0,0,.01); }
+        .page-divider { width: 40px; height: 1px; background: rgba(0,0,0,.2); margin: 1.5rem 0; }
+        .book-open-trigger { cursor: pointer; position: relative; overflow: hidden; }
+        .book-open-trigger::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,.03); opacity: 0; transition: opacity .25s ease; }
+        .book-open-trigger:hover::after { opacity: 1; }
+        .book-open-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: rgba(255,255,255,.9); background: rgba(0,0,0,.5); padding: 6px 12px; border-radius: 999px; opacity: 0; transition: opacity .25s ease; pointer-events: none; }
+        .book-open-trigger:hover .book-open-hint { opacity: 1; }
+        /* 瀏覽器僅支援 RGB；若圖檔為 CMYK 請先轉為 sRGB 再上傳，此處不再套用濾鏡避免二次失真 */
+        .work-video-link { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: #fff; background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); padding: 6px 12px; border-radius: 999px; transition: transform .2s, box-shadow .2s; }
+        .work-video-link:hover { color: #fff; transform: scale(1.04); box-shadow: 0 4px 12px rgba(220,38,38,.4); }
+        .award-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; color: #1a1a1a; background: linear-gradient(135deg, #E8C547 0%, #C9A227 50%, #B8860B 100%); padding: 5px 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.15); border: 1px solid rgba(255,255,255,.35); }
+        .award-badge .award-dot { width: 4px; height: 4px; background: #1a1a1a; border-radius: 50%; }
+        .reveal { opacity:0; transform: translateY(40px); }
+        body.lang-en .zh-only { display: none !important; }
+        body.lang-zh .en-only { display: none !important; }
+
+        /* 書本閱覽 modal */
+        #book-viewer { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity .3s ease; }
+        #book-viewer.open { display: flex; opacity: 1; }
+        #book-viewer .book-container { max-width: 95vw; max-height: 90vh; width: 900px; position: relative; display: flex; align-items: center; justify-content: center; }
+        #book-viewer .book-page-img { max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 4px; box-shadow: 0 24px 48px rgba(0,0,0,.4); background: #1a1a1a; }
+        #book-viewer .btn-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s, transform .2s; z-index: 2; }
+        #book-viewer .btn-nav:hover { background: rgba(255,255,255,.25); transform: translateY(-50%) scale(1.05); }
+        #book-viewer .btn-prev { left: -60px; }
+        #book-viewer .btn-next { right: -60px; }
+        @media (max-width: 1024px) { #book-viewer .btn-prev { left: 12px; } #book-viewer .btn-next { right: 12px; } }
+        #book-viewer .btn-close { position: absolute; top: -52px; right: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; z-index: 2; }
+        #book-viewer .btn-close:hover { background: rgba(255,255,255,.2); }
+        #book-viewer .book-title { position: absolute; top: -52px; left: 0; color: rgba(255,255,255,.9); font-family: 'Noto Serif TC', serif; font-size: 1.1rem; font-weight: 400; }
+        #book-viewer .book-pagination { position: absolute; bottom: -44px; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.6); font-size: 12px; letter-spacing: .1em; }
+
+        /* Menu Overlay (match other pages) */
+        #menu-overlay { position:fixed; inset:0; z-index:10000; background:rgba(245,243,238,.97); backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); opacity:0; pointer-events:none; transition:opacity .4s ease; overflow-y:auto; }
+        #menu-overlay.open { opacity:1; pointer-events:auto; }
+        .menu-nav-link { display:block; font-family:'Syncopate',sans-serif; font-size:clamp(2.2rem,5vw,4.5rem); font-weight:700; color:rgba(17,17,17,.11); letter-spacing:-.02em; padding:.4rem 0; border-bottom:1px solid rgba(0,0,0,.05); transition:color .3s ease,padding-left .4s cubic-bezier(.16,1,.3,1); cursor:none; line-height:1.15; }
+        .menu-nav-link:hover { color:#111; padding-left:.75rem; }
+        .menu-sub-link { display:flex; align-items:center; gap:.5rem; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:rgba(17,17,17,.32); transition:color .25s; cursor:none; padding:.55rem 0; border-bottom:1px solid rgba(0,0,0,.04); }
+        .menu-sub-link:hover { color:#111; }
+    </style>
+</head>
+<body class="antialiased">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="noise-overlay"></div>
+    <div id="custom-cursor"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-6 backdrop-blur-xl bg-white/40 border-b border-black/5">
+        <a href="index.html" class="text-2xl font-['Syncopate'] font-bold tracking-tighter cursor-pointer magnetic text-black">FU.</a>
+        <div class="flex items-center gap-6 lg:gap-10">
+            <ul class="gap-10 text-xs uppercase tracking-[0.2em] hidden md:flex font-semibold text-black/60 items-center">
+                <li><a href="index.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Home</span><span class="zh-only">首頁</span></a></li>
+                <li><a href="projects.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a></li>
+                <li><a href="resume.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Resume</span><span class="zh-only">個人履歷</span></a></li>
+                <li><a href="contact.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a></li>
+            </ul>
+            <div class="flex items-center gap-3">
+                <button id="lang-toggle" class="magnetic w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-[10px] font-bold text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text">EN</span>
+                </button>
+                <button id="menu-btn" class="magnetic border border-black/20 rounded-full px-6 py-2 text-xs uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text block"><span class="en-only">Menu</span><span class="zh-only">選單</span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Book Cover + 目錄 -->
+    <section class="pt-40 pb-12 px-6 md:px-20 max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-end">
+            <div class="title-reveal">
+                <div class="chapter-label mb-6">Portfolio · Bachelor of Architecture · 2019–2023</div>
+                <h1 class="text-5xl md:text-7xl font-['Syncopate'] font-bold tracking-tighter text-[#111] leading-[0.92] mb-6">SELECTED<br>WORKS</h1>
+                <h2 class="text-2xl font-['Noto_Serif_TC'] font-light text-black/50 mb-8"><span class="zh-only">學士作品選集</span><span class="en-only">Bachelor Selected Works</span></h2>
+                <div class="page-divider"></div>
+                <p class="text-sm text-black/40 font-medium leading-relaxed max-w-sm">
+                    <span class="zh-only">五年學士建築教育中的核心創作，涵蓋都市再生、競圖提案、環境設計等多元議題。點擊作品圖片可像翻書一樣閱覽更多。</span>
+                    <span class="en-only">Core creations from five years of undergraduate architectural education, covering urban regeneration, competition proposals, environmental design, and more. Click on images to browse like a book.</span>
+                </p>
+            </div>
+            <div class="book-page rounded-[2rem] p-8 reveal toc-compact">
+                <div class="chapter-label mb-4">Table of Contents · 目錄</div>
+                <div class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[11px]">
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2"><span class="zh-only">01 · 森源重生</span><span class="en-only">01 · Morigaki Rebirth</span></span><span class="text-[10px] font-mono text-black/30 shrink-0">Healthcare</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2"><span class="zh-only">06 · 數位作品</span><span class="en-only">06 · Digital Works</span></span><span class="text-[10px] font-mono text-black/30 shrink-0">Digital</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2">02 · Stay by Green Waterway</span><span class="text-[10px] font-mono text-black/30 shrink-0">Urban</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2">07 · Spiral Community Home</span><span class="text-[10px] font-mono text-black/30 shrink-0">Community</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2">03 · Acupuncture for Aqenna</span><span class="text-[10px] font-mono text-black/30 shrink-0">Ecology</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2"><span class="zh-only">08 · Back in Time... 水滴時穿</span><span class="en-only">08 · Back in Time...</span></span><span class="text-[10px] font-mono text-black/30 shrink-0">Library</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2"><span class="zh-only">04 · 破風之針</span><span class="en-only">04 · Wind Needle</span></span><span class="text-[10px] font-mono text-black/30 shrink-0">Smart</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2">09 · Home & Home</span><span class="text-[10px] font-mono text-black/30 shrink-0">Care</span></div>
+                    <div class="flex justify-between items-baseline border-b border-black/6 pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2"><span class="zh-only">05 · 城市 T 細胞</span><span class="en-only">05 · Urban T Cells</span></span><span class="text-[10px] font-mono text-black/30 shrink-0">Resilience</span></div>
+                    <div class="flex justify-between items-baseline pb-1.5"><span class="font-['Noto_Serif_TC'] text-[#111] truncate pr-2"><span class="zh-only">10 · 2%'s Home 希望的種子</span><span class="en-only">10 · 2%'s Home</span></span><span class="text-[10px] font-mono text-black/30 shrink-0">Housing</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 01 森源重生 -->
+    <section class="py-20 px-6 md:px-20 max-w-6xl mx-auto reveal" data-book-index="0">
+        <div class="book-page rounded-[2.5rem] overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[65vh]">
+                <div class="book-open-trigger h-80 lg:h-auto flex items-center justify-center" data-book-index="0">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_3f89631b6ed744bd9db2ae0ff7460e83~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="森源重生" />
+                    <span class="book-open-hint"><span class="en-only">View</span><span class="zh-only">閱覽</span> · <span class="en-only">Pages</span><span class="zh-only">翻書</span></span>
+                </div>
+                <div class="p-10 md:p-14 flex flex-col justify-center">
+                    <div class="chapter-label mb-6">01 · Healthcare Architecture · 2022</div>
+                    <h3 class="project-title-cn mb-2"><span class="zh-only">森源重生</span><span class="en-only">Morigaki Rebirth</span></h3>
+                    <div class="mb-3"><span class="award-badge"><span class="award-dot"></span><span class="zh-only">亞洲建築新人戰：佳作</span><span class="en-only">Asian Architecture Newcomer Competition: Excellent Work</span></span></div>
+                    <div class="page-divider"></div>
+                    <p class="project-desc mt-6">
+                        <span class="zh-only">講述小建築如何在疫情時代下成為緩兵之計，透過將可組合的多變隔離小單元導入基地，解決醫療量能的同時也活化了荒廢數十年但富有歷史韻味的都市孔隙。</span>
+                        <span class="en-only">Morigaki Rebirth explores how small buildings became a buffer during the pandemic. By integrating modular, adaptable isolation units into the base, they addressed medical capacity issues while revitalizing urban spaces rich in history that had been abandoned for decades.</span>
+                    </p>
+                    <p class="project-desc mt-4">
+                        <span class="zh-only">當疫情緩解後，場所的記憶正式發酵，活動得以進入基地，而單元則功成身退，有機的結合古蹟使場所重生。</span>
+                        <span class="en-only">Once the pandemic eased, the site's memory began to flourish, allowing activities to flow into the base while the units were retired. This organic integration with the historic site led to its rebirth.</span>
+                    </p>
+                    <div class="mt-8 flex gap-3 flex-wrap">
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Modular</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Adaptive Reuse</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Post-Pandemic</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 02 Stay by Green Waterway -->
+    <section class="py-10 px-6 md:px-20 max-w-6xl mx-auto reveal" data-book-index="1">
+        <div class="book-page rounded-[2.5rem] overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[65vh]">
+                <div class="p-10 md:p-14 flex flex-col justify-center order-2 lg:order-1">
+                    <div class="chapter-label mb-6">02 · Urban Regeneration · 2021</div>
+                    <h3 class="project-title-cn mb-2">Stay by Green Waterway</h3>
+                    <p class="text-sm text-black/30 font-mono mb-4"><span class="zh-only">綠川托老托幼兼青創中心</span><span class="en-only">Green Waterway Daycare & Innovation Center</span></p>
+                    <div class="page-divider"></div>
+                    <p class="project-desc mt-6">
+                        <span class="zh-only">私心將從小喜歡的美式漫畫風格帶入版面，成為一個有趣的圖面表達方式。這個作品講述在台中綠川旁的一棟廢棄大樓，如何搖身變為迎接綠川的口袋公園，同時綠意盎然、機能完善、承襲舊有文化特色造型的托老托幼兼青創中心。</span>
+                        <span class="en-only">Stay by Green Waterway is a unique work that incorporates the American comic book style I've loved since childhood into its layout, creating a playful visual expression. This work tells the story of how an abandoned building beside the Green River in Taichung was transformed into a pocket park that welcomes the Green River. It also serves as a daycare center for the elderly, children, and youth entrepreneurs, embodying the unique cultural heritage of the past.</span>
+                    </p>
+                    <p class="project-desc mt-4">
+                        <span class="zh-only">透過主角威廉的帶領，展開遊歷這棟建築的冒險！</span>
+                        <span class="en-only">Led by the protagonist William, we embark on an adventure through this building!</span>
+                    </p>
+                    <div class="mt-6 flex flex-wrap items-center gap-3">
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Comics Narrative</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Mixed-Use</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Green Corridor</span>
+                        <a href="https://www.youtube.com/watch?v=Puube4NN4GM" target="_blank" rel="noopener" class="work-video-link uppercase cursor-pointer" title="托老托幼兼青創中心設計">▶ <span class="en-only">Watch</span><span class="zh-only">觀看影片</span></a>
+                    </div>
+                </div>
+                <div class="book-open-trigger h-80 lg:h-auto flex items-center justify-center order-1 lg:order-2" data-book-index="1">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_e7f4477db15041a28188e4030d732330~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="Stay by Green Waterway" />
+                    <span class="book-open-hint"><span class="en-only">View</span><span class="zh-only">閱覽</span> · <span class="en-only">Pages</span><span class="zh-only">翻書</span></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 03 Acupuncture for Aqenna -->
+    <section class="py-10 px-6 md:px-20 max-w-6xl mx-auto reveal" data-book-index="2">
+        <div class="book-page rounded-[2.5rem] overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[65vh]">
+                <div class="book-open-trigger h-80 lg:h-auto flex items-center justify-center" data-book-index="2">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_2945103144584eefb3e55ba459351f16~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="Acupuncture for Aqenna" />
+                    <span class="book-open-hint"><span class="en-only">View</span><span class="zh-only">閱覽</span> · <span class="en-only">Pages</span><span class="zh-only">翻書</span></span>
+                </div>
+                <div class="p-10 md:p-14 flex flex-col justify-center">
+                    <div class="chapter-label mb-6">03 · Ecological Intervention · 2022</div>
+                    <h3 class="project-title-cn mb-2">Acupuncture for Aqenna</h3>
+                    <div class="mb-3"><span class="award-badge"><span class="award-dot"></span>American Master Prize：Best of Best · 2Winner</span></div>
+                    <p class="text-sm text-black/30 font-mono mb-4"><span class="zh-only">基隆正濱漁港</span><span class="en-only">Zhengbin Port, Keelung</span></p>
+                    <div class="page-divider"></div>
+                    <p class="project-desc mt-6">
+                        <span class="zh-only">基地位於基隆正濱漁港一處富有歷史意義的造船廠廢墟遺址，正面臨著極端氣候、生態危機，以及疫情的影響。本設計巧妙地用一個手法同時解決數個問題——在修建計畫的前提下挖開基地，使潮汐得以進入，讓再利用的浮動板控制疫情下的動線，發展觀光的可能性，同時將沃土和魚苗緩慢復育。</span>
+                        <span class="en-only">Acupuncture for Aqenna is located at a historically significant shipyard ruin in Keelung's Zhengbin Port, facing extreme climate, ecological crises, and the pandemic. We cleverly solved multiple problems at once: excavating the site to allow tidal entry, using reused floating platforms to control circulation during the pandemic, developing tourism possibilities, and slowly restoring soil and fish fry.</span>
+                    </p>
+                    <div class="mt-8 flex gap-3 flex-wrap">
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">American Master Prize</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Tidal Design</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Ecology</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 04 & 05 side by side -->
+    <section class="py-10 px-6 md:px-20 max-w-6xl mx-auto reveal">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="book-page rounded-[2.5rem] overflow-hidden flex flex-col" data-book-index="3">
+                <div class="book-open-trigger h-60 flex items-center justify-center" data-book-index="3">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_b10b13f79fd541f3a23bde4c6bb1a6e7~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="破風之針" />
+                    <span class="book-open-hint"><span class="en-only">View</span><span class="zh-only">閱覽</span></span>
+                </div>
+                <div class="p-8 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="chapter-label mb-4">04 · Smart Infrastructure · 2021</div>
+                        <h3 class="project-title-cn text-2xl mb-2"><span class="zh-only">破風之針</span><span class="en-only">Acupuncture for Wind</span></h3>
+                        <div class="mb-2"><span class="award-badge"><span class="award-dot"></span><span class="zh-only">第十五屆創意未來智慧化建築設計創意競賽：銀獎</span><span class="en-only">15th Creative Future Smart Building Design: Silver Award</span></span><span class="award-badge"><span class="award-dot"></span><span class="zh-only">中技社科技創意獎</span><span class="en-only">CTCI Technology Innovation Award</span></span></div>
+                        <p class="project-desc text-sm">
+                            <span class="zh-only">面對大樓風對台北多處公園的活動產生影響，破風之針作為一種智慧的風力發電單元，同時具備展開扇葉及牆幕的功能，改善都市微氣候及熱島效應的同時，為市民帶來更豐富的空置地使用可能性。</span>
+                            <span class="en-only">In response to high-rise winds affecting activities in Taipei parks, the Wind Needle, a smart wind turbine, can deploy both blades and walls. It improves urban microclimate and heat island effect while providing more possibilities for vacant land use.</span>
+                        </p>
+                    </div>
+                    <div class="mt-6 flex flex-wrap items-center gap-3">
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-3 py-1 text-black/40">Wind Energy</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-3 py-1 text-black/40">Smart City</span>
+                        <a href="https://www.youtube.com/watch?v=gKKvU4kUKIE" target="_blank" rel="noopener" class="work-video-link uppercase cursor-pointer" title="將都市大樓風的缺點轉變為優勢">▶ <span class="en-only">Watch</span><span class="zh-only">觀看影片</span></a>
+                    </div>
+                </div>
+            </div>
+            <div class="book-page rounded-[2.5rem] overflow-hidden flex flex-col" data-book-index="4">
+                <div class="book-open-trigger h-60 flex items-center justify-center" data-book-index="4">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_d67bd231a84e47e286d65c95cc049180~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="城市 T 細胞" />
+                    <span class="book-open-hint"><span class="en-only">View</span><span class="zh-only">閱覽</span></span>
+                </div>
+                <div class="p-8 flex-1 flex flex-col justify-between">
+                    <div>
+                        <div class="chapter-label mb-4">05 · Resilience Design · 2022</div>
+                        <h3 class="project-title-cn text-2xl mb-3"><span class="zh-only">城市 T 細胞</span><span class="en-only">Urban T Cells</span></h3>
+                        <p class="project-desc text-sm">
+                            <span class="zh-only">做為一個海平面上升及災後對策的幻想提案，意圖使簡易的多功能 T 細胞單元能夠組成應付各式需求的模矩。平時常駐於都市孔隙之中多功能使用活化空間。</span>
+                            <span class="en-only">Urban T Cells, a visionary proposal for sea level rise and post-disaster mitigation, aims to transform simple, multifunctional units into modules for diverse needs, revitalizing urban voids.</span>
+                        </p>
+                    </div>
+                    <div class="mt-6 flex gap-2 flex-wrap">
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-3 py-1 text-black/40">Climate Resilience</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-3 py-1 text-black/40">Modular</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project 06 數位作品 -->
+    <section class="py-10 px-6 md:px-20 max-w-6xl mx-auto reveal" data-book-index="5">
+        <div class="book-page rounded-[2.5rem] overflow-hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[50vh]">
+                <div class="book-open-trigger h-72 lg:h-auto flex items-center justify-center" data-book-index="5">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_127c2667c61a4ebabe7ce3266265bcac~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="數位作品" />
+                    <span class="book-open-hint"><span class="en-only">View</span><span class="zh-only">閱覽</span> · <span class="en-only">Pages</span><span class="zh-only">翻書</span></span>
+                </div>
+                <div class="p-10 md:p-14 flex flex-col justify-center">
+                    <div class="chapter-label mb-6">06 · Digital Works</div>
+                    <h3 class="project-title-cn mb-4"><span class="zh-only">數位作品</span><span class="en-only">Digital Works</span></h3>
+                    <div class="page-divider"></div>
+                    <p class="project-desc mt-6">
+                        <span class="zh-only">學士階段數位設計與視覺表現相關作品選。</span>
+                        <span class="en-only">Selected digital design and visual representation works from undergraduate years.</span>
+                    </p>
+                    <div class="mt-8 flex gap-3 flex-wrap">
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Digital</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest border border-black/12 rounded-full px-4 py-1 text-black/40">Visual</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects 07–10 · Other Works（高級簡約呈現） -->
+    <section class="py-10 px-6 md:px-20 max-w-6xl mx-auto reveal">
+        <div class="chapter-label mb-8">07–10 · More Selected Works</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="book-page rounded-2xl overflow-hidden flex flex-col" data-book-index="6">
+                <div class="book-open-trigger aspect-[4/3] flex items-center justify-center" data-book-index="6">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_1eac6c2e0f7a43fc90ff1a1236d39320~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="Spiral Community Home" />
+                    <span class="book-open-hint"><span class="zh-only">閱覽</span><span class="en-only">View</span></span>
+                </div>
+                <div class="p-5">
+                    <div class="chapter-label mb-1">07 · Community</div>
+                    <h3 class="project-title-cn text-lg mb-0.5">Spiral Community Home</h3>
+                    <p class="text-xs text-black/40 font-['Noto_Serif_TC']"><span class="zh-only">社區活動中心設計</span><span class="en-only">Community Center Design</span></p>
+                </div>
+            </div>
+            <div class="book-page rounded-2xl overflow-hidden flex flex-col" data-book-index="7">
+                <div class="book-open-trigger aspect-[4/3] flex items-center justify-center" data-book-index="7">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_e1f8e968e2694bd796dcaae491989616~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="Back in Time... 水滴時穿" />
+                    <span class="book-open-hint"><span class="zh-only">閱覽</span><span class="en-only">View</span></span>
+                </div>
+                <div class="p-5">
+                    <div class="chapter-label mb-1">08 · Library</div>
+                    <h3 class="project-title-cn text-lg mb-0.5"><span class="zh-only">Back in Time... 水滴時穿</span><span class="en-only">Back in Time...</span></h3>
+                    <p class="text-xs text-black/40 font-['Noto_Serif_TC']"><span class="zh-only">國家總統圖書館設計</span><span class="en-only">National Presidential Library</span></p>
+                </div>
+            </div>
+            <div class="book-page rounded-2xl overflow-hidden flex flex-col" data-book-index="8">
+                <div class="book-open-trigger aspect-[4/3] flex items-center justify-center" data-book-index="8">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_65dfa97892cd4f339037106824c55ed3~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="Home & Home" />
+                    <span class="book-open-hint"><span class="zh-only">閱覽</span><span class="en-only">View</span></span>
+                </div>
+                <div class="p-5">
+                    <div class="chapter-label mb-1">09 · Care</div>
+                    <h3 class="project-title-cn text-lg mb-0.5">Home & Home</h3>
+                    <p class="text-xs text-black/40 font-['Noto_Serif_TC']"><span class="zh-only">長照中心護理之家設計</span><span class="en-only">Long-term Care Facility</span></p>
+                    <a href="https://www.youtube.com/watch?v=UKBzFYhQENI" target="_blank" rel="noopener" class="work-video-link uppercase mt-2 inline-block" title="長照護理之家設計">▶ <span class="zh-only">觀開影片</span><span class="en-only">Watch</span></a>
+                </div>
+            </div>
+            <div class="book-page rounded-2xl overflow-hidden flex flex-col" data-book-index="9">
+                <div class="book-open-trigger aspect-[4/3] flex items-center justify-center" data-book-index="9">
+                    <img class="w-full h-full object-cover" src="https://static.wixstatic.com/media/1a29c1_08589e0e8a324cd8badcdfc84b66840e~mv2.jpg/v1/fit/w_1200,h_1200,al_c,q_85,enc_auto/image.jpg" alt="2%'s Home 希望的種子" />
+                    <span class="book-open-hint"><span class="zh-only">閱覽</span><span class="en-only">View</span></span>
+                </div>
+                <div class="p-5">
+                    <div class="chapter-label mb-1">10 · Social Housing</div>
+                    <h3 class="project-title-cn text-lg mb-0.5"><span class="zh-only">2%'s Home 希望的種子</span><span class="en-only">2%'s Home</span></h3>
+                    <p class="text-xs text-black/40 font-['Noto_Serif_TC'] mb-2"><span class="zh-only">濱海國宅-社會住宅設計</span><span class="en-only">Coastal Social Housing Design</span></p>
+                    <span class="award-badge text-[9px] py-1 px-2"><span class="award-dot"></span><span class="zh-only">2022 住都盃挑戰賽：入圍獎</span><span class="en-only">2022 Zhudu Cup: Finalist</span></span>
+                    <a href="https://www.youtube.com/watch?v=G1KV9WbHJlU" target="_blank" rel="noopener" class="work-video-link uppercase mt-2 inline-block" title="濱海國宅社會住宅設計-住督盃競圖">▶ <span class="zh-only">觀看影片</span><span class="en-only">Watch</span></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 書本閱覽 Modal -->
+    <div id="book-viewer" aria-hidden="true">
+        <div class="book-container">
+            <button type="button" class="btn-close" id="book-close" aria-label="關閉"><iconify-icon icon="ph:x-bold" width="20"></iconify-icon></button>
+            <span class="book-title" id="book-title"></span>
+            <button type="button" class="btn-nav btn-prev" id="book-prev" aria-label="上一頁"><iconify-icon icon="ph:caret-left-bold" width="24"></iconify-icon></button>
+            <img class="book-page-img" id="book-page-img" src="" alt="" />
+            <button type="button" class="btn-nav btn-next" id="book-next" aria-label="下一頁"><iconify-icon icon="ph:caret-right-bold" width="24"></iconify-icon></button>
+            <div class="book-pagination" id="book-pagination">1 / 1</div>
+        </div>
+    </div>
+
+    <!-- Nav -->
+    <section class="py-16 px-6 md:px-20 max-w-6xl mx-auto flex justify-between items-center border-t border-black/10 mt-10">
+        <a href="graduation-project.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/40 hover:text-black transition-colors"><iconify-icon icon="ph:arrow-left-bold" class="magnetic-text"></iconify-icon><span class="magnetic-text">Graduation</span></a>
+        <a href="master-works.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/40 hover:text-black transition-colors"><span class="magnetic-text">Master Works</span><iconify-icon icon="ph:arrow-right-bold" class="magnetic-text"></iconify-icon></a>
+    </section>
+
+    <footer class="relative z-10 w-full bg-white/80 backdrop-blur-2xl border-t border-black/5 py-8 px-6 md:px-12">
+        <div class="max-w-[1920px] mx-auto flex justify-between items-center text-black/40">
+            <a href="index.html" class="text-xl font-['Syncopate'] font-bold text-[#111]">FU.</a>
+            <p class="text-xs font-mono uppercase tracking-widest font-bold">&copy; 2026 FU. <span class="en-only">All Rights Reserved.</span><span class="zh-only">版權所有。</span></p>
+        </div>
+    </footer>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div class="min-h-screen flex flex-col px-8 md:px-16 py-10">
+            <div class="flex justify-between items-center max-w-5xl mx-auto w-full">
+                <a href="index.html" class="text-2xl font-['Syncopate'] font-bold text-black tracking-tighter cursor-none flex items-baseline gap-3">
+                    <span>FU.</span>
+                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-black/40">Resume &amp; Portfolio</span>
+                </a>
+                <button id="menu-close" class="w-11 h-11 rounded-full border border-black/15 flex items-center justify-center text-black/40 hover:text-black hover:border-black transition-all cursor-none">
+                    <iconify-icon icon="ph:x-bold" class="text-base"></iconify-icon>
+                </button>
+            </div>
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 content-center max-w-5xl mt-16 mx-auto w-full">
+                <div>
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Pages</span><span class="zh-only">頁面</span></div>
+                    <nav>
+                        <a href="index.html" class="menu-nav-link"><span class="en-only">Home</span><span class="zh-only">首頁</span></a>
+                        <a href="projects.html" class="menu-nav-link"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a>
+                        <a href="resume.html" class="menu-nav-link"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></a>
+                        <a href="contact.html" class="menu-nav-link"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a>
+                    </nav>
+                </div>
+                <div class="lg:pt-16">
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Project Details</span><span class="zh-only">專案詳情</span></div>
+                    <nav>
+                        <a href="graduation-project.html" class="menu-sub-link"><span class="en-only">Graduation Project</span><span class="zh-only">畢業設計</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="bachelor-works.html" class="menu-sub-link" style="color:#111;"><span class="en-only">Selected Works (Bachelor)</span><span class="zh-only">大學作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="master-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Master)</span><span class="zh-only">研究所作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="thesis.html" class="menu-sub-link"><span class="en-only">Master's Thesis · CoEvo</span><span class="zh-only">碩士論文 · CoEvo</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                    </nav>
+                    <div class="mt-12 pt-8 border-t border-black/6">
+                        <p class="text-[10px] font-mono text-black/20 uppercase tracking-widest font-bold"><span class="en-only">Based in Taiwan · Architectural Innovation Designer</span><span class="zh-only">台灣 · 建築創新設計師</span></p>
+                        <a href="mailto:zx26244623@gmail.com" class="mt-3 block text-xs font-mono text-black/35 hover:text-black transition-colors cursor-none">zx26244623@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    const BACHELOR_WORKS = [
+        {
+            id: 'senyuan',
+            title: '森源重生',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_3f89631b6ed744bd9db2ae0ff7460e83~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_5d6456f5275c4145af32939d5ec6c055~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_f2bf618636814878be346434c0fe1f59~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_b277c51d16154e4cabbf07809d075245~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_73b5dfd8ab144842adc5a1dad5a461fa~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_38c7893bdbf54d2db51c2d4f444f56c0~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_45c528d4a69b45a499dde1267df437f4~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_f6c101ee79e941f5aad8711b46d54d04~mv2.jpg'
+            ]
+        },
+        {
+            id: 'stay-green',
+            title: 'Stay by Green Waterway',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_e7f4477db15041a28188e4030d732330~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_5f5086faad6b446b9619872ad8f5218d~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_09c1a2893e28488595ba2b8d184b95c4~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_1b5c29c01553404fabed3eda206015ba~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_f780b1e0f1dd43d7ab02bafa3195797d~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_ff96a7b97d3c49eb954c2140df3b572c~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_0e3f7ae3a78343d0b7abe56abf15a141~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_96e4b9bed2764cb6a0e46d092f48e6c2~mv2.jpg'
+            ]
+        },
+        {
+            id: 'acupuncture',
+            title: 'Acupuncture for Aqenna',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_2945103144584eefb3e55ba459351f16~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_fea6519371a4451e8f4b2881f6e27f92~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_8904be99feaa4f02835d3c80965a805c~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_1338cbf8105f4837ab6584af55ef42fd~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_2cc930b132ad41fb9c94a43144c6fd28~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_4e8b7d51a4ef49f5b22a18ac7525c570~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_f35056a664ec425a9eb2a7a4617c33d8~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_287227a44f1e499a86654fd276fa9dbb~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_f0dd7d64b0ed4dc695d0625c39253fe0~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_347007eb886e4ce998bb031f70f1c534~mv2.jpg'
+            ]
+        },
+        {
+            id: 'wind',
+            title: '破風之針',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_b10b13f79fd541f3a23bde4c6bb1a6e7~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_956c8d9af8954b6f91786eccfb40dda1~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_832006020fca474285afa021edcd2e77~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_f900da16bd6749088644bd74b362b214~mv2.jpg'
+            ]
+        },
+        {
+            id: 'tcell',
+            title: '城市 T 細胞',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_d67bd231a84e47e286d65c95cc049180~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_0f96bb4dfc1d45cb91f4ea6dbfbbe1e0~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_ae08564fe46e49878943acd7370807af~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_81aff626e177466cb8b224330ce4e415~mv2.jpg'
+            ]
+        },
+        {
+            id: 'digital',
+            title: '數位作品',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_127c2667c61a4ebabe7ce3266265bcac~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_210aa21dbb8541d294c1180d95ef0256~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_620efcf774ce4a5e85ec9a01c6c12695~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_2838639956574941bf81d555ea0fea6a~mv2.jpg'
+            ]
+        },
+        {
+            id: 'spiral',
+            title: 'Spiral Community Home',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_1eac6c2e0f7a43fc90ff1a1236d39320~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_7df5f6fbd5c64b3ea34accdc4d2c7df4~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_cbd9aa809c3d48fdaae1c352f48026af~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_0a719d5664e247d382e06dfd5841eb1f~mv2.jpg'
+            ]
+        },
+        {
+            id: 'back-in-time',
+            title: 'Back in Time... 水滴時穿',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_e1f8e968e2694bd796dcaae491989616~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_c8e1f8bce4354cca965404a1ec3c48e3~mv2.jpg'
+            ]
+        },
+        {
+            id: 'home-home',
+            title: 'Home & Home',
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_65dfa97892cd4f339037106824c55ed3~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_fc5d390e1aa84483a9e986823f8aec7c~mv2.jpg'
+            ]
+        },
+        {
+            id: 'twopercent-home',
+            title: "2%'s Home 希望的種子",
+            images: [
+                'https://static.wixstatic.com/media/1a29c1_08589e0e8a324cd8badcdfc84b66840e~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_ec80f4cf9a164905904a548b79593f5c~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_558194bbb6dd4727935f842d61c367bf~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_fbfd45ab614b4e2e93399786cfd54f6d~mv2.jpg',
+                'https://static.wixstatic.com/media/1a29c1_a41f2bb6b61f4499a0aea2b121f584fc~mv2.jpg'
+            ]
+        }
+    ];
+
+    BACHELOR_WORKS.forEach(work => {
+        work.images = work.images.map(url => {
+            // 如果網址還沒有被加上處理參數，就幫它加上 1920px 高畫質轉換參數
+            if (url.includes('~mv2.jpg') && !url.includes('/v1/')) {
+                return `${url}/v1/fit/w_1920,h_1920,al_c,q_90,enc_auto/image.jpg`;
+            }
+            return url;
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', e => gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: .15, ease: "power2.out" }));
+        document.querySelectorAll('a, button, .magnetic').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+        document.querySelectorAll('.magnetic').forEach(btn => {
+            btn.addEventListener('mousemove', e => {
+                const r = btn.getBoundingClientRect(), x = e.clientX - r.left - r.width / 2, y = e.clientY - r.top - r.height / 2;
+                gsap.to(btn, { x: x * .4, y: y * .4, duration: .3, ease: "power2.out" });
+                const t = btn.querySelector('.magnetic-text');
+                if (t) gsap.to(t, { x: x * .2, y: y * .2, duration: .3, ease: "power2.out" });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: .7, ease: "elastic.out(1,.3)" });
+                const t = btn.querySelector('.magnetic-text');
+                if (t) gsap.to(t, { x: 0, y: 0, duration: .7, ease: "elastic.out(1,.3)" });
+            });
+        });
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.title-reveal', { y: 60, opacity: 0, duration: 1.2, ease: "power4.out", delay: .3 });
+        gsap.utils.toArray('.reveal').forEach(el => {
+            gsap.to(el, { scrollTrigger: { trigger: el, start: "top 88%" }, y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+        });
+
+        // 語言切換
+        const langToggle = document.getElementById('lang-toggle');
+        let currentLang = localStorage.getItem('pref-lang') || 'en';
+        function applyLang() {
+            document.body.classList.remove('lang-en', 'lang-zh');
+            document.body.classList.add('lang-' + currentLang);
+            if (langToggle) {
+                const textSpan = langToggle.querySelector('.magnetic-text');
+                if (textSpan) textSpan.innerText = currentLang === 'en' ? '中' : 'EN';
+            }
+        }
+        applyLang();
+        if (langToggle) {
+            langToggle.addEventListener('click', () => {
+                currentLang = currentLang === 'en' ? 'zh' : 'en';
+                localStorage.setItem('pref-lang', currentLang);
+                applyLang();
+            });
+        }
+
+        // Menu Overlay
+        const menuBtn = document.getElementById('menu-btn');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuClose = document.getElementById('menu-close');
+        if (menuBtn) menuBtn.addEventListener('click', e => { e.stopPropagation(); menuOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; });
+        if (menuClose) menuClose.addEventListener('click', () => { menuOverlay.classList.remove('open'); document.body.style.overflow = ''; });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && menuOverlay && menuOverlay.classList.contains('open')) { menuOverlay.classList.remove('open'); document.body.style.overflow = ''; } });
+
+        // 點擊圖片區開啟書本閱覽
+        document.querySelectorAll('.book-open-trigger').forEach(el => {
+            const index = parseInt(el.getAttribute('data-book-index'), 10);
+            if (isNaN(index)) return;
+            el.addEventListener('click', () => openBookViewer(index));
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // 書本閱覽
+        const viewer = document.getElementById('book-viewer');
+        const imgEl = document.getElementById('book-page-img');
+        const titleEl = document.getElementById('book-title');
+        const paginationEl = document.getElementById('book-pagination');
+        let currentWorkIndex = 0;
+        let currentPage = 0;
+
+        function openBookViewer(workIndex) {
+            currentWorkIndex = workIndex;
+            currentPage = 0;
+            const work = BACHELOR_WORKS[workIndex];
+            titleEl.textContent = work.title;
+            imgEl.src = work.images[0];
+            imgEl.alt = work.title + ' — 1';
+            paginationEl.textContent = `1 / ${work.images.length}`;
+            viewer.classList.add('open');
+            viewer.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            updateBookPage();
+        }
+
+        function updateBookPage() {
+            const work = BACHELOR_WORKS[currentWorkIndex];
+            if (!work || currentPage < 0 || currentPage >= work.images.length) return;
+            imgEl.src = work.images[currentPage];
+            imgEl.alt = work.title + ' — ' + (currentPage + 1);
+            paginationEl.textContent = `${currentPage + 1} / ${work.images.length}`;
+            document.getElementById('book-prev').style.visibility = currentPage === 0 ? 'hidden' : 'visible';
+            document.getElementById('book-next').style.visibility = currentPage === work.images.length - 1 ? 'hidden' : 'visible';
+        }
+
+        function closeBookViewer() {
+            viewer.classList.remove('open');
+            viewer.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+
+        document.getElementById('book-close').addEventListener('click', closeBookViewer);
+        document.getElementById('book-prev').addEventListener('click', () => {
+            if (currentPage > 0) { currentPage--; updateBookPage(); }
+        });
+        document.getElementById('book-next').addEventListener('click', () => {
+            const work = BACHELOR_WORKS[currentWorkIndex];
+            if (currentPage < work.images.length - 1) { currentPage++; updateBookPage(); }
+        });
+        viewer.addEventListener('click', e => { if (e.target === viewer) closeBookViewer(); });
+        document.addEventListener('keydown', e => {
+            if (!viewer.classList.contains('open')) return;
+            if (e.key === 'Escape') closeBookViewer();
+            if (e.key === 'ArrowLeft') document.getElementById('book-prev').click();
+            if (e.key === 'ArrowRight') document.getElementById('book-next').click();
+        });
+
+        initWebGL();
+    });
+
+    function initWebGL() {
+        const c = document.getElementById('webgl-canvas');
+        const r = new THREE.WebGLRenderer({ canvas: c, alpha: true, antialias: true });
+        r.setSize(window.innerWidth, window.innerHeight);
+        r.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const s = new THREE.Scene(), cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const u = { u_time: { value: 0 }, u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) } };
+        const m = new THREE.ShaderMaterial({
+            uniforms: u, transparent: true,
+            vertexShader: `void main(){gl_Position=vec4(position,1.);}`,
+            fragmentShader: `uniform float u_time;uniform vec2 u_resolution;vec3 p3(vec3 x){return mod(((x*34.)+1.)*x,289.);}float sn(vec2 v){const vec4 C=vec4(.211324865,.366025403,-.577350269,.024390243);vec2 i=floor(v+dot(v,C.yy)),x0=v-i+dot(i,C.xx),i1;i1=(x0.x>x0.y)?vec2(1,0):vec2(0,1);vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.);vec3 p=p3(p3(i.y+vec3(0,i1.y,1))+i.x+vec3(0,i1.x,1));vec3 m=max(.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.);m=m*m;m=m*m;vec3 x=2.*fract(p*C.www)-1.,h=abs(x)-.5,ox=floor(x+.5),a0=x-ox;m*=1.79284291-.85373472*(a0*a0+h*h);vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.*dot(m,g);}void main(){vec2 st=gl_FragCoord.xy/u_resolution.xy;st.x*=u_resolution.x/u_resolution.y;float n=sn(vec2(st.x+u_time*.03,st.y+u_time*.03));float nm=n*.5+.5;vec3 c1=vec3(.97,.96,.94),c2=vec3(.93,.92,.89);vec3 fc=mix(c1,c2,nm);gl_FragColor=vec4(fc,1.);}`
+        });
+        s.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), m));
+        window.addEventListener('resize', () => { r.setSize(window.innerWidth, window.innerHeight); u.u_resolution.value.set(window.innerWidth, window.innerHeight); });
+        (function animate(t) { u.u_time.value = t * .001; r.render(s, cam); requestAnimationFrame(animate); })(0);
+    }
+    </script>
+</body>
+</html>

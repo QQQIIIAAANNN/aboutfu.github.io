@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FU. | CoEvo — 碩士論文</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&family=Syncopate:wght@400;700&family=Noto+Serif+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #F8F9FA; color: #111; font-family: 'Manrope', sans-serif; overflow-x: hidden; cursor: none; }
+        ::selection { background: rgba(17,17,17,.9); color: #fff; }
+        #custom-cursor { position:fixed; top:0; left:0; width:12px; height:12px; background:#fff; border-radius:50%; pointer-events:none; z-index:10002; transform:translate(-50%,-50%); transition:width .3s cubic-bezier(.16,1,.3,1),height .3s cubic-bezier(.16,1,.3,1); mix-blend-mode:difference; }
+        #custom-cursor.hover { width:60px; height:60px; background:rgba(255,255,255,.1); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.5); }
+        .noise-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:9998; background:url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E'); opacity:.03; mix-blend-mode:multiply; }
+        #webgl-canvas { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-1; pointer-events:none; opacity:.85; }
+        ::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-track { background:#F8F9FA; } ::-webkit-scrollbar-thumb { background:rgba(0,0,0,.15); border-radius:10px; }
+        .glass-panel { background:rgba(255,255,255,.65); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border:1px solid rgba(0,0,0,.05); box-shadow:0 40px 80px rgba(0,0,0,.04),inset 0 0 0 1px rgba(255,255,255,.6); }
+        /* Menu Overlay */
+        #menu-overlay { position:fixed; inset:0; z-index:10000; background:rgba(248,249,250,.97); backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); opacity:0; pointer-events:none; transition:opacity .4s ease; overflow-y:auto; }
+        #menu-overlay.open { opacity:1; pointer-events:auto; }
+        .menu-nav-link { display:block; font-family:'Syncopate',sans-serif; font-size:clamp(2.2rem,5vw,4.5rem); font-weight:700; color:rgba(17,17,17,.11); letter-spacing:-.02em; padding:.4rem 0; border-bottom:1px solid rgba(0,0,0,.05); transition:color .3s ease,padding-left .4s cubic-bezier(.16,1,.3,1); cursor:none; line-height:1.15; }
+        .menu-nav-link:hover { color:#111; padding-left:.75rem; }
+        .menu-sub-link { display:flex; align-items:center; gap:.5rem; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:rgba(17,17,17,.32); transition:color .25s; cursor:none; padding:.55rem 0; border-bottom:1px solid rgba(0,0,0,.04); }
+        .menu-sub-link:hover { color:#111; }
+
+        /* Video Hero */
+        #video-hero { position:relative; width:100%; height:100vh; overflow:hidden; }
+        #video-hero .hero-video-wrap { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:177.78vh; min-width:100%; height:56.25vw; min-height:100%; pointer-events:none; }
+        #video-hero .hero-video-wrap iframe { width:100%; height:100%; border:none; }
+        .video-overlay { position:absolute; inset:0; background:rgba(0,0,0,.55); z-index:2; }
+        .video-content { position:absolute; inset:0; z-index:3; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2rem; }
+        .award-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 18px; border-radius:999px; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+        .chip { display:inline-flex; align-items:center; padding:4px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.25); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.75); backdrop-filter:blur(8px); background:rgba(255,255,255,.08); }
+        .watch-btn { display:inline-flex; align-items:center; gap:10px; padding:16px 36px; border-radius:999px; background:rgba(255,255,255,.12); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.3); color:#fff; font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; cursor:none; transition:background .3s,transform .3s; text-decoration:none; }
+        .watch-btn:hover { background:rgba(255,255,255,.22); transform:scale(1.03); }
+
+        /* Scroll hint */
+        .scroll-hint { position:absolute; bottom:2.5rem; left:50%; transform:translateX(-50%); z-index:3; display:flex; flex-direction:column; align-items:center; gap:8px; }
+        .scroll-hint span { font-size:9px; font-weight:700; letter-spacing:.25em; text-transform:uppercase; color:rgba(255,255,255,.5); }
+        .scroll-hint .line { width:1px; height:40px; background:linear-gradient(to bottom,rgba(255,255,255,.4),transparent); animation:scrollLine 2s ease-in-out infinite; }
+        @keyframes scrollLine { 0%,100%{height:40px;opacity:.5} 50%{height:20px;opacity:1} }
+
+        /* (Video modal removed — using direct YouTube link) */
+
+        /* Thesis images strip — elegant tab switcher */
+        #thesis-images-strip { padding: 4rem 0; background: #fff; }
+        .strip-container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+        .strip-tabs { display: flex; justify-content: center; gap: 2rem; margin-bottom: 3rem; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 1rem; }
+        .strip-tab { font-family: 'Syncopate', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(0,0,0,0.25); cursor: pointer; transition: all 0.4s ease; position: relative; padding: 0.5rem 0; }
+        .strip-tab::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 0; height: 2px; background: #111; transition: width 0.4s ease; }
+        .strip-tab.active { color: #111; }
+        .strip-tab.active::after { width: 100%; }
+        
+        .strip-content { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 2rem; overflow: hidden; background: #f0f0f0; box-shadow: 0 40px 100px rgba(0,0,0,0.05); }
+        .strip-slide { position: absolute; inset: 0; opacity: 0; transition: opacity 0.8s ease, transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); transform: scale(1.05); pointer-events: none; }
+        .strip-slide.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+        .strip-slide img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .strip-caption-box { margin-top: 2rem; text-align: center; }
+        .strip-caption-title { font-family: 'Noto Serif TC', serif; font-size: 1.25rem; font-weight: 600; color: #111; margin-bottom: 0.5rem; }
+        .strip-caption-desc { font-family: 'Manrope', sans-serif; font-size: 0.9rem; color: rgba(0,0,0,0.4); font-weight: 500; }
+
+        /* Abstract hover tooltips — stay visible when hovering card; paragraph raises above next */
+        .abs-tooltip-trigger { position:relative; cursor:help; border-bottom:1.5px dashed rgba(0,0,0,.2); z-index:1; }
+        .abs-tooltip-trigger:hover { border-bottom-color:#d97706; }
+        .abs-tooltip { position:absolute; top:calc(100% + 10px); left:50%; transform:translateX(-50%); opacity:0; pointer-events:none; z-index:10002; width:380px; max-width:90vw; padding:0; border-radius:1rem; background:rgba(255,255,255,.98); backdrop-filter:blur(24px); border:1px solid rgba(0,0,0,.08); box-shadow:0 24px 64px rgba(0,0,0,.18); transition:opacity .25s ease; overflow:hidden; }
+        .abs-tooltip::after { content:''; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); border:6px solid transparent; border-bottom-color:rgba(255,255,255,.98); }
+        .abs-tooltip-trigger:hover .abs-tooltip,
+        .abs-tooltip-trigger.tooltip-visible .abs-tooltip { opacity:1; pointer-events:auto; }
+        .abstract-para.tooltip-active { position:relative; z-index:100; }
+        .abs-tooltip .tt-images { display:flex; gap:2px; }
+        .abs-tooltip .tt-images img { flex:1; min-width:0; height:140px; object-fit:cover; transition:transform .4s ease; cursor:zoom-in; }
+        .abs-tooltip .tt-images img:hover { transform:scale(1.05); }
+        .abs-tooltip .tt-images.single img { height:180px; }
+        .abs-tooltip .tt-info { display:block; padding:12px 16px 14px; }
+        .abs-tooltip .tt-chapter { font-size:9px; font-family:'Syncopate',sans-serif; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:rgba(0,0,0,.25); margin-bottom:2px; display:block; }
+        .abs-tooltip .tt-title { font-family:'Noto Serif TC',serif; font-weight:400; font-size:13px; color:#111; display:block; }
+
+        /* Gallery */
+        .gallery-grid { columns:2; column-gap:.75rem; }
+        @media(min-width:768px) { .gallery-grid { columns:3; } }
+        @media(min-width:1280px) { .gallery-grid { columns:4; } }
+        .gallery-item { break-inside:avoid; margin-bottom:.75rem; border-radius:1rem; overflow:hidden; cursor:zoom-in; position:relative; }
+        .gallery-item img { width:100%; height:auto; display:block; transition:transform .7s cubic-bezier(.16,1,.3,1); }
+        .gallery-item:hover img { transform:scale(1.04); }
+        .gallery-item::after { content:''; position:absolute; inset:0; background:rgba(17,17,17,0); transition:background .35s; }
+        .gallery-item:hover::after { background:rgba(17,17,17,.1); }
+
+        /* Lightbox */
+        #lightbox { display:none; position:fixed; inset:0; z-index:15000; background:rgba(6,6,12,.96); backdrop-filter:blur(32px); align-items:center; justify-content:center; cursor:zoom-out; }
+        #lightbox.active { display:flex; }
+        #lightbox img { max-width:90vw; max-height:88vh; object-fit:contain; border-radius:1rem; box-shadow:0 40px 100px rgba(0,0,0,.6); }
+        #lb-close { position:fixed; top:2rem; right:2rem; width:44px; height:44px; border-radius:50%; background:#fff; color:#111; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:15001; font-size:18px; }
+
+        /* (accordion removed — integrated into abstract tooltips) */
+        .abstract-text { font-family:'Noto Serif TC',serif; font-size:1rem; line-height:2.1; color:rgba(17,17,17,.65); font-weight:300; }
+        .abstract-para { opacity:0; transform:translateY(24px); filter:blur(6px); transition:opacity .8s ease, transform .8s ease, filter .8s ease; }
+        .abstract-para.visible { opacity:1; transform:translateY(0); filter:blur(0); }
+        .abstract-highlight { background:linear-gradient(120deg,rgba(245,158,11,.15) 0%,rgba(217,119,6,.08) 100%); padding:2px 6px; border-radius:4px; font-weight:400; }
+        .abstract-key { position:relative; font-weight:400; }
+        .abstract-key::after { content:''; position:absolute; bottom:2px; left:0; width:100%; height:2px; background:linear-gradient(90deg,#f59e0b,#d97706); border-radius:1px; transform:scaleX(0); transform-origin:left; transition:transform .6s cubic-bezier(.16,1,.3,1); }
+        .abstract-para.visible .abstract-key::after { transform:scaleX(1); }
+        .abstract-divider { width:60px; height:1px; background:linear-gradient(90deg,transparent,rgba(0,0,0,.15),transparent); margin:2rem auto; }
+        .keyword-chip { display:inline-block; padding:5px 14px; border-radius:999px; background:#111; color:#fff; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:3px; }
+        .reveal { opacity:0; transform:translateY(30px); }
+        body.lang-en .zh-only { display:none !important; }
+        body.lang-zh .en-only { display:none !important; }
+    </style>
+</head>
+<body class="antialiased">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="noise-overlay"></div>
+    <div id="custom-cursor"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-6 transition-all duration-300" id="main-nav" style="background:transparent;">
+        <a href="index.html" class="text-2xl font-['Syncopate'] font-bold tracking-tighter cursor-pointer magnetic text-black">FU.</a>
+        <div class="flex items-center gap-6 lg:gap-10">
+            <ul class="gap-10 text-xs uppercase tracking-[0.2em] hidden md:flex font-semibold text-black/60 items-center">
+                <li><a href="index.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Home</span><span class="zh-only">首頁</span></a></li>
+                <li><a href="projects.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a></li>
+                <li><a href="resume.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Resume</span><span class="zh-only">個人履歷</span></a></li>
+                <li><a href="contact.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a></li>
+            </ul>
+            <div class="flex items-center gap-3">
+                <button id="lang-toggle" class="magnetic w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-[10px] font-bold text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text">EN</span>
+                </button>
+                <button id="menu-btn" class="magnetic border border-black/20 rounded-full px-6 py-2 text-xs uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text block"><span class="en-only">Menu</span><span class="zh-only">選單</span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ═══ VIDEO HERO ═══ -->
+    <section id="video-hero">
+        <div class="hero-video-wrap">
+            <iframe src="https://www.youtube-nocookie.com/embed/-EVTmppnLtw?si=gpr34wLO836uQgtc&amp;controls=0&amp;clip=UgkxGYl02Ejaueerw0AuXOSoGDa4BQ5x-Ws0&amp;clipt=EIbRBxivuQk&amp;autoplay=1&amp;mute=1&amp;loop=1&amp;playlist=-EVTmppnLtw&amp;playsinline=1&amp;rel=0" title="YouTube video player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+        <div class="video-overlay"></div>
+        <div class="video-content">
+            <p class="text-white/50 text-xs font-mono uppercase tracking-[.3em] mb-5">Master's Thesis · NCKU · 2025</p>
+            <h1 class="text-7xl md:text-[10rem] font-['Syncopate'] font-bold text-white leading-none tracking-tighter mb-12 title-reveal">CoEvo</h1>
+            <div class="flex gap-4 flex-wrap justify-center">
+                <a href="https://www.youtube.com/watch?v=-EVTmppnLtw&t=3s" target="_blank" class="watch-btn magnetic">
+                    <iconify-icon icon="ph:play-circle-fill" class="text-2xl"></iconify-icon>
+                    <span class="magnetic-text"><span class="en-only">Watch Full Video</span><span class="zh-only">觀看完整影片</span></span>
+                </a>
+            </div>
+        </div>
+        <div class="scroll-hint">
+            <span>Scroll</span>
+            <div class="line"></div>
+        </div>
+    </section>
+
+    <!-- ═══ META INFO STRIP ═══ -->
+    <section class="py-16 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10 reveal">
+        <div class="text-center mb-8">
+            <p class="text-black/70 text-lg md:text-xl font-['Noto_Serif_TC'] font-bold leading-relaxed">
+                <span class="zh-only">CoEvo：生成式人工智慧之多代理系統在建築設計創新流程的探討</span>
+                <span class="en-only">CoEvo: Exploring Multi-Agent Generative AI Systems in the Innovative Architectural Design Process</span>
+            </p>
+            <p class="text-black/40 text-sm md:text-base mt-2 font-bold">CoEvo: Exploring Multi-Agent Generative AI Systems in the Innovative Architectural Design Process</p>
+        </div>
+        <div class="glass-panel rounded-[2rem] p-8 md:p-12">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-black/6">
+                <div class="px-4">
+                    <div class="text-[9px] font-mono text-black/25 uppercase tracking-widest mb-2">Institution</div>
+                    <div class="font-['Syncopate'] font-bold text-sm text-[#111]">NCKU</div>
+                    <div class="text-xs text-black/40 mt-1"><span class="zh-only">成功大學</span><span class="en-only">National Cheng Kung Univ.</span></div>
+                </div>
+                <div class="px-4">
+                    <div class="text-[9px] font-mono text-black/25 uppercase tracking-widest mb-2">Year</div>
+                    <div class="font-['Syncopate'] font-bold text-sm text-[#111]">2025</div>
+                    <div class="text-xs text-black/40 mt-1"><span class="zh-only">數位設計組</span><span class="en-only">Digital Design Group</span></div>
+                </div>
+                <div class="px-4">
+                    <div class="text-[9px] font-mono text-black/25 uppercase tracking-widest mb-2">Award</div>
+                    <div class="font-['Syncopate'] font-bold text-sm text-[#111]"><span class="zh-only">優良碩士論文</span><span class="en-only">Honorable Thesis</span></div>
+                    <div class="text-xs text-black/40 mt-1"><span class="zh-only">臺灣建築學會 2026</span><span class="en-only">Architectural Inst. Taiwan</span></div>
+                </div>
+                <div class="px-4">
+                    <div class="text-[9px] font-mono text-black/25 uppercase tracking-widest mb-2">Lab</div>
+                    <div class="font-['Syncopate'] font-bold text-sm text-[#111]">IA Lab</div>
+                    <div class="text-xs text-black/40 mt-1"><span class="zh-only">互動建築研究室</span><span class="en-only">Interactive Arch. Lab</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ ABSTRACT with integrated Research Structure ═══ -->
+    <section id="abstract-section" class="py-8 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10 reveal" style="overflow:visible;">
+        <div class="mb-8 flex items-center gap-3">
+            <iconify-icon icon="ph:book-open-bold" class="text-black/30"></iconify-icon>
+            <span class="text-[10px] font-mono text-black/25 font-bold tracking-widest uppercase">Abstract · 摘要</span>
+            <span class="text-[9px] font-mono text-black/15 ml-auto hidden md:block">Hover highlighted terms to explore chapters</span>
+        </div>
+        <div class="glass-panel rounded-[2.5rem] p-10 md:p-16" style="overflow:visible;">
+
+            <p class="abstract-text mb-6 abstract-para" data-delay="0">
+                <span class="zh-only">
+                    隨著<span class="abs-tooltip-trigger abstract-key">生成式人工智慧（Generative AI）<span class="abs-tooltip"><span class="tt-images"><img src="https://static.wixstatic.com/media/1a29c1_ea956ded1ac84ae4b41478c2d4be64bf~mv2.jpg" alt="研究背景"><img src="https://static.wixstatic.com/media/1a29c1_c197341eafcc40598c658f27b0f38ef8~mv2.jpg" alt="研究動機"></span><span class="tt-info"><span class="tt-chapter">Chapter 01</span><span class="tt-title">研究背景與動機</span></span></span></span>的迅速崛起，其應用在建築設計領域仍面臨流程斷裂與知識整合的挑戰。現有AI工具多為分散式應用，難以觸及設計過程中複雜、隱性的決策網絡。為此，本研究的核心目標是建構一個名為<span class="abstract-highlight"><strong>CoEvo</strong></span>的生成式AI<span class="abs-tooltip-trigger abstract-key">多代理（Multi-Agent）協作系統<span class="abs-tooltip"><span class="tt-images"><img src="https://static.wixstatic.com/media/1a29c1_1e7d8409aef74b318a1f93023e1a27b3~mv2.jpg" alt="文獻回顧"><img src="https://static.wixstatic.com/media/1a29c1_86e1989d88c94a019f69f37f69f661cd~mv2.jpg" alt="文獻回顧"></span><span class="tt-info"><span class="tt-chapter">Chapter 02</span><span class="tt-title">文獻回顧</span></span></span></span>，旨在將建築設計中隱性的知識與複雜的流程，正規化為一個由多AI代理協同工作的可追蹤、可編輯的節點工作流程。如此AI才能更緊密的與人類協作，有效率地生成出具有建築內涵的設計方案。
+                </span>
+                <span class="en-only">
+                    With the rapid rise of <span class="abs-tooltip-trigger abstract-key">Generative AI<span class="abs-tooltip"><span class="tt-images"><img src="https://static.wixstatic.com/media/1a29c1_ea956ded1ac84ae4b41478c2d4be64bf~mv2.jpg" alt="Background"><img src="https://static.wixstatic.com/media/1a29c1_c197341eafcc40598c658f27b0f38ef8~mv2.jpg" alt="Motivation"></span><span class="tt-info"><span class="tt-chapter">Chapter 01</span><span class="tt-title">Background & Motivation</span></span></span></span>, its application in architecture faces challenges of process fragmentation and knowledge integration. Existing AI tools are mostly decentralized, making it hard to reach the complex, implicit decision networks in design. This research introduces <span class="abstract-highlight"><strong>CoEvo</strong></span>, a <span class="abs-tooltip-trigger abstract-key">Multi-Agent collaborative system<span class="abs-tooltip"><span class="tt-images"><img src="https://static.wixstatic.com/media/1a29c1_1e7d8409aef74b318a1f93023e1a27b3~mv2.jpg" alt="Literature"><img src="https://static.wixstatic.com/media/1a29c1_86e1989d88c94a019f69f37f69f661cd~mv2.jpg" alt="Literature"></span><span class="tt-info"><span class="tt-chapter">Chapter 02</span><span class="tt-title">Literature Review</span></span></span></span>, aimed at formalizing implicit design knowledge and workflows into a traceable, editable node-based process. This integration enables AI to collaborate more deeply with humans, efficiently generating designs with architectural depth.
+                </span>
+            </p>
+
+            <div class="abstract-divider abstract-para" data-delay="150"></div>
+
+            <p class="abstract-text mb-6 abstract-para" data-delay="200">
+                <span class="zh-only">
+                    本研究以人類的設計思考流程為基礎，探索如何將生成式人工智慧與多代理系統，<span class="abs-tooltip-trigger abstract-key">整合應用於建築設計的創新流程<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_6cdfe3ca77844ed0ae4b6d925e530aa8~mv2.jpg" alt="創新流程"></span><span class="tt-info"><span class="tt-chapter">Chapter 03</span><span class="tt-title">整合應用於建築設計的創新流程</span></span></span></span>，提煉出兩種整合人類設計思考與人工智慧的設計探索模式：<span class="abstract-highlight">「目標導向的最佳化設計流程」</span>與<span class="abstract-highlight">「廣域探索導向的同步化設計流程」</span>。接著，為支持這兩種模式，本研究設計、實現並比較了兩種對應的多智能體協作架構：一種是強調穩定與效率的<span class="abs-tooltip-trigger abstract-key">順序化協作架構<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_d2ecfb7adc0146f0884bac91e86737fe~mv2.jpg" alt="順序化協作架構"></span><span class="tt-info"><span class="tt-chapter">Chapter 03 · Architecture A</span><span class="tt-title">順序化協作架構</span></span></span></span>，適用於對單一方案的深度精煉；另一種是具備高度彈性與動態性的<span class="abs-tooltip-trigger abstract-key">層級化協作架構<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_86c815d6171744558cdfffbfedb109df~mv2.jpg" alt="層級化協作架構"></span><span class="tt-info"><span class="tt-chapter">Chapter 03 · Architecture B</span><span class="tt-title">層級化協作架構</span></span></span></span>，適用於設計初期的多路徑並行探索。
+                </span>
+                <span class="en-only">
+                    Grounded in human design thinking, this study explores <span class="abs-tooltip-trigger abstract-key">integrating GenAI and multi-agent systems<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_6cdfe3ca77844ed0ae4b6d925e530aa8~mv2.jpg" alt="Innovation Process"></span><span class="tt-info"><span class="tt-chapter">Chapter 03</span><span class="tt-title">Integrated Innovation Process</span></span></span></span> into architectural design, distilling two exploration patterns: <span class="abstract-highlight">"Goal-oriented optimization"</span> and <span class="abstract-highlight">"Broad exploration-oriented synchronization."</span> To support these, two architectures are implemented and compared: a <span class="abs-tooltip-trigger abstract-key">Sequential collaboration architecture<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_d2ecfb7adc0146f0884bac91e86737fe~mv2.jpg" alt="Sequential"></span><span class="tt-info"><span class="tt-chapter">Chapter 03 · Architecture A</span><span class="tt-title">Sequential Architecture</span></span></span></span> for deep refinement, and a highly flexible <span class="abs-tooltip-trigger abstract-key">Hierarchical collaboration architecture<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_86c815d6171744558cdfffbfedb109df~mv2.jpg" alt="Hierarchical"></span><span class="tt-info"><span class="tt-chapter">Chapter 03 · Architecture B</span><span class="tt-title">Hierarchical Architecture</span></span></span></span> for early multi-path exploration.
+                </span>
+            </p>
+
+            <div class="abstract-divider abstract-para" data-delay="350"></div>
+
+            <p class="abstract-text mb-6 abstract-para" data-delay="400">
+                <span class="zh-only">
+                    通過在CoEvo平台上的<span class="abs-tooltip-trigger abstract-key">案例實證與比較分析<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_66304b7f98d14ca4ba8b4a6956436ca4~mv2.jpg" alt="案例實證"></span><span class="tt-info"><span class="tt-chapter">Chapter 04</span><span class="tt-title">案例實證與比較分析</span></span></span></span>，研究結果表明，<span class="abstract-key">層級化協作架構</span>不僅在支持複雜的廣域探索時表現出顯著優勢，其靈活性更使其能夠向下兼容並模擬順序化的優化流程，展現出作為未來通用型設計平台的巨大潛力；而順序化架構則在高度標準化的特定任務中，仍保有其效率價值。
+                </span>
+                <span class="en-only">
+                    Through <span class="abs-tooltip-trigger abstract-key">case studies and comparative analysis<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_66304b7f98d14ca4ba8b4a6956436ca4~mv2.jpg" alt="Case Study"></span><span class="tt-info"><span class="tt-chapter">Chapter 04</span><span class="tt-title">Case Studies & Analysis</span></span></span></span> on CoEvo, results show the <span class="abstract-key">Hierarchical architecture</span> excels in complex exploration and remains versatile enough to simulate sequential optimization, showing potential as a universal design platform. The sequential architecture maintains efficiency for standardized tasks.
+                </span>
+            </p>
+
+            <div class="abstract-divider abstract-para" data-delay="550"></div>
+
+            <p class="abstract-text abstract-para" data-delay="600">
+                <span class="zh-only">
+                    本研究的核心貢獻不僅在於提供了一個可行的系統框架，更在於提出了一套以多代理系統為基礎的<span class="abs-tooltip-trigger abstract-key">設計流程方法論<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_4e0b2e03e5be49f0973eae9bd9b9d021~mv2.jpg" alt="設計流程方法論"></span><span class="tt-info"><span class="tt-chapter">Chapter 05</span><span class="tt-title">結論與未來展望</span></span></span></span>，並揭示了多AI協作對建築師創意與多樣化探索策略的影響。CoEvo的實踐，為未來開發能與建築師深度協同、重塑建築師價值核心的AI輔助設計代理，提供了關鍵的理論基礎與實踐洞見，期望能藉此推動建築設計流程的<span class="abstract-key">協作效率與創新潛力</span>。
+                </span>
+                <span class="en-only">
+                    Beyond a framework, this study proposes a <span class="abs-tooltip-trigger abstract-key">multi-agent design methodology<span class="abs-tooltip"><span class="tt-images single"><img src="https://static.wixstatic.com/media/1a29c1_4e0b2e03e5be49f0973eae9bd9b9d021~mv2.jpg" alt="Methodology"></span><span class="tt-info"><span class="tt-chapter">Chapter 05</span><span class="tt-title">Conclusion & Future Work</span></span></span></span>, revealing AI's impact on architectural creativity. CoEvo provides key theoretical and practical insights for future AI agents that deeply integrate with architects, aiming to enhance <span class="abstract-key">collaborative efficiency and innovation</span> in design workflows.
+                </span>
+            </p>
+
+            <div class="mt-10 pt-8 border-t border-black/8 abstract-para" data-delay="750">
+                <div class="text-[9px] font-mono text-black/25 uppercase tracking-widest mb-4">Keywords · 關鍵字</div>
+                <div>
+                    <span class="keyword-chip"><span class="zh-only">多代理系統</span><span class="en-only">Multi-Agent Systems</span></span>
+                    <span class="keyword-chip"><span class="zh-only">生成式人工智慧</span><span class="en-only">Generative AI</span></span>
+                    <span class="keyword-chip"><span class="zh-only">建築設計流程</span><span class="en-only">Architectural Design Process</span></span>
+                    <span class="keyword-chip"><span class="zh-only">設計決策</span><span class="en-only">Design Decision-making</span></span>
+                    <span class="keyword-chip"><span class="zh-only">設計探索模式</span><span class="en-only">Design Exploration Pattern</span></span>
+                    <span class="keyword-chip"><span class="zh-only">空間智能</span><span class="en-only">Spatial Intelligence</span></span>
+                    <span class="keyword-chip"><span class="zh-only">人機協作</span><span class="en-only">Human-AI Collaboration</span></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ THESIS IMAGES STRIP（切換展示） ═══ -->
+    <section id="thesis-images-strip" class="reveal">
+        <div class="strip-container px-6">
+            <div class="strip-tabs">
+                <div class="strip-tab active" onclick="setStrip(0)">Architecture A</div>
+                <div class="strip-tab" onclick="setStrip(1)">Architecture B</div>
+                <div class="strip-tab" onclick="setStrip(2)">Architecture B+</div>
+            </div>
+            
+            <div class="strip-content">
+                <div class="strip-slide active" data-index="0">
+                    <img src="IMG/S3.jpg" loading="lazy" alt="順序化協作過程" onclick="openLightbox('IMG/S3.jpg')" style="cursor:zoom-in;">
+                </div>
+                <div class="strip-slide" data-index="1">
+                    <img src="IMG/H2.jpg" loading="lazy" alt="層級化協作過程" onclick="openLightbox('IMG/H2.jpg')" style="cursor:zoom-in;">
+                </div>
+                <div class="strip-slide" data-index="2">
+                    <img src="IMG/H3.jpg" loading="lazy" alt="層級化協作過程2" onclick="openLightbox('IMG/H3.jpg')" style="cursor:zoom-in;">
+                </div>
+            </div>
+            
+            <div class="strip-caption-box">
+                <h4 class="strip-caption-title" id="strip-title">順序化協作過程</h4>
+                <p class="strip-caption-desc" id="strip-desc">Sequential Collaboration Process (Architecture A)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ RESEARCH GALLERY ═══ -->
+    <section class="py-16 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10 reveal">
+        <div class="mb-10 flex items-center justify-between border-b border-black/8 pb-8">
+            <div>
+                <div class="flex items-center gap-2 mb-3"><iconify-icon icon="ph:images-bold" class="text-black/30"></iconify-icon><span class="text-[10px] font-mono text-black/25 font-bold tracking-widest uppercase">Research Figures · 論文圖示</span></div>
+                <h2 class="text-2xl md:text-3xl font-['Syncopate'] font-bold text-[#111] tracking-tight">Visual Documentation</h2>
+            </div>
+            <span class="text-[9px] font-mono text-black/20 uppercase tracking-widest hidden md:block">Click to enlarge</span>
+        </div>
+        <div class="gallery-grid">
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_ea956ded1ac84ae4b41478c2d4be64bf~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_ea956ded1ac84ae4b41478c2d4be64bf~mv2.jpg" loading="lazy" alt="CoEvo Figure 1"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_f61955dd06ea4a91b025c92fddc0c0dd~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_f61955dd06ea4a91b025c92fddc0c0dd~mv2.jpg" loading="lazy" alt="CoEvo Figure 2"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_1f12fb5edce44f278a24220d3188e1f1~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_1f12fb5edce44f278a24220d3188e1f1~mv2.jpg" loading="lazy" alt="CoEvo Figure 3"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_2b55b99748fb4636875239c834bdbcb5~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_2b55b99748fb4636875239c834bdbcb5~mv2.jpg" loading="lazy" alt="CoEvo Figure 4"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_e3db2d11c8024822a3a08bb289c80a80~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_e3db2d11c8024822a3a08bb289c80a80~mv2.jpg" loading="lazy" alt="CoEvo Figure 5"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_95b8a224feea4c11a333330261d2463e~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_95b8a224feea4c11a333330261d2463e~mv2.jpg" loading="lazy" alt="CoEvo Figure 6"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_d7278d6ff1f546998539a1de4fc93be7~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_d7278d6ff1f546998539a1de4fc93be7~mv2.jpg" loading="lazy" alt="CoEvo Figure 7"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_5529b7ec0e1c457bb3690f7d8014af55~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_5529b7ec0e1c457bb3690f7d8014af55~mv2.jpg" loading="lazy" alt="CoEvo Figure 9"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_447f922067f54284aa95a837053a5016~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_447f922067f54284aa95a837053a5016~mv2.jpg" loading="lazy" alt="CoEvo Figure 10"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_07edabc3201b4e1e9ede114d14ca3f93~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_07edabc3201b4e1e9ede114d14ca3f93~mv2.jpg" loading="lazy" alt="CoEvo Figure 11"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_c8b1df02cfe14506892c75316d13e45f~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_c8b1df02cfe14506892c75316d13e45f~mv2.jpg" loading="lazy" alt="CoEvo Figure"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_2d3d2fa3419a43f4bf61837c993912c8~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_2d3d2fa3419a43f4bf61837c993912c8~mv2.jpg" loading="lazy" alt="CoEvo Figure"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_c0dc87d3ef19400cb80045448ef6d3ce~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_c0dc87d3ef19400cb80045448ef6d3ce~mv2.jpg" loading="lazy" alt="CoEvo Figure"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_c9a9e24e3ef045c581d61b612549de06~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_c9a9e24e3ef045c581d61b612549de06~mv2.jpg" loading="lazy" alt="CoEvo Figure"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_a53ef73385cb41f09c99f61905989390~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_a53ef73385cb41f09c99f61905989390~mv2.jpg" loading="lazy" alt="CoEvo Figure 15"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_088dcccfce2e45a1992eabe886c49630~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_088dcccfce2e45a1992eabe886c49630~mv2.jpg" loading="lazy" alt="CoEvo Figure 16"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_0afc5db9b69a4ba59c0bf09ac73c40b7~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_0afc5db9b69a4ba59c0bf09ac73c40b7~mv2.jpg" loading="lazy" alt="CoEvo Figure 17"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_ae81bb55986849dab2b29c05b868a398~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_ae81bb55986849dab2b29c05b868a398~mv2.jpg" loading="lazy" alt="CoEvo Figure 18"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_a964b8871d3d4b5e8fc6d9804dd9cb28~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_a964b8871d3d4b5e8fc6d9804dd9cb28~mv2.jpg" loading="lazy" alt="CoEvo Figure 19"></div>
+            <div class="gallery-item" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_8d43236ae3b54b12b53719e532b27e23~mv2.jpg')"><img src="https://static.wixstatic.com/media/1a29c1_8d43236ae3b54b12b53719e532b27e23~mv2.jpg" loading="lazy" alt="CoEvo Figure 20"></div>
+        </div>
+    </section>
+
+    <!-- Research Structure is now integrated as hover tooltips in the Abstract section above -->
+
+    <!-- ═══ DOWNLOAD CTA ═══ -->
+    <section class="py-16 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10 reveal">
+        <div class="glass-panel rounded-[2.5rem] p-10 md:p-16 overflow-hidden relative">
+            <div class="absolute top-0 right-0 w-64 h-64 rounded-full bg-gradient-to-br from-amber-100/40 to-transparent -translate-y-1/2 translate-x-1/4 blur-3xl pointer-events-none"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10">
+                <div>
+                    <div class="award-badge mb-4 inline-flex"><iconify-icon icon="ph:trophy-fill"></iconify-icon> 2026 優良碩士論文獎</div>
+                    <h3 class="text-3xl md:text-4xl font-['Syncopate'] font-bold text-[#111] mb-3 tracking-tight leading-tight">CoEvo<br>Thesis</h3>
+                    <p class="text-black/45 text-sm font-medium leading-relaxed mb-2">國立成功大學 · 建築研究所 · 2025</p>
+                    <p class="text-black/30 text-xs font-mono uppercase tracking-widest">Complete Research Paper · PDF Download</p>
+                </div>
+                <div class="flex flex-col gap-4 md:items-end">
+                    <a href="https://thesis.lib.ncku.edu.tw/thesis/detail/dc2f1d50efc11a617044fd8cd3cee8b8/" target="_blank" class="magnetic bg-[#111] text-white px-10 py-5 rounded-full font-bold tracking-[0.15em] text-xs uppercase flex items-center gap-3 hover:bg-[#333] transition-colors shadow-2xl shadow-black/20 w-fit">
+                        <iconify-icon icon="ph:download-simple-bold" class="text-base"></iconify-icon>
+                        <span class="magnetic-text"><span class="en-only">Download Full PDF</span><span class="zh-only">下載完整論文 PDF</span></span>
+                    </a>
+                    <a href="https://www.youtube.com/watch?v=-EVTmppnLtw&t=3s" target="_blank" class="magnetic border border-black/15 px-10 py-5 rounded-full font-bold tracking-[0.15em] text-xs uppercase flex items-center gap-3 hover:bg-black hover:text-white transition-colors w-fit">
+                        <iconify-icon icon="ph:play-circle-bold"></iconify-icon>
+                        <span class="magnetic-text"><span class="en-only">Watch Research Video</span><span class="zh-only">觀看研究影片</span></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══ JOURNAL PUBLICATION ═══ -->
+    <section class="py-8 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10 reveal">
+        <div class="glass-panel rounded-[2.5rem] p-10 md:p-14 overflow-hidden relative" style="background:rgba(255,255,255,.45);">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <span class="text-[9px] font-mono text-black/25 uppercase tracking-widest font-bold">期刊論文 · 建築學報 · In Review</span>
+                        <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:999px;border:1px solid rgba(0,0,0,.1);color:rgba(17,17,17,.4);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">即將發布</span>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-['Syncopate'] font-bold text-[#111]/50 mb-3 tracking-tight leading-tight">Ai-DFab</h3>
+                    <p class="text-black/45 text-sm font-medium leading-relaxed mb-1">生成式人工智慧與多代理系統於設計與製造流程之應用</p>
+                    <p class="text-black/30 text-xs font-mono italic">Application of Generative AI and Multi-Agent Systems in Design and Fabrication Processes</p>
+                    <p class="text-[10px] text-black/20 font-mono uppercase tracking-widest mt-3">Journal of Architecture · 建築學報</p>
+                </div>
+                <div class="flex flex-col gap-3 md:items-end justify-center">
+                    <div class="border border-black/10 px-10 py-5 rounded-full font-bold tracking-[0.15em] text-xs uppercase flex items-center gap-3 text-black/25 w-fit" style="cursor:default;">
+                        <iconify-icon icon="ph:clock-countdown-bold" class="text-base"></iconify-icon>
+                        <span><span class="en-only">Journal Coming Soon</span><span class="zh-only">期刊即將發布</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom Navigation -->
+    <section class="py-16 px-6 md:px-12 max-w-[1400px] mx-auto flex justify-between items-center border-t border-black/8 relative z-10">
+        <a href="master-works.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/30 hover:text-black transition-colors cursor-none">
+            <iconify-icon icon="ph:arrow-left-bold" class="magnetic-text"></iconify-icon>
+            <span class="magnetic-text"><span class="en-only">Master Works</span><span class="zh-only">研究所作品集</span></span>
+        </a>
+        <a href="contact.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/30 hover:text-black transition-colors cursor-none">
+            <span class="magnetic-text"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></span>
+            <iconify-icon icon="ph:arrow-right-bold" class="magnetic-text"></iconify-icon>
+        </a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="relative z-10 w-full bg-white/80 backdrop-blur-2xl border-t border-black/5 py-8 px-6 md:px-12">
+        <div class="max-w-[1400px] mx-auto flex justify-between items-center text-black/40">
+            <a href="index.html" class="text-xl font-['Syncopate'] font-bold text-[#111]">FU.</a>
+            <div class="flex items-center gap-8">
+                <a href="mailto:zx26244623@gmail.com" class="text-xs font-mono hover:text-black transition-colors">zx26244623@gmail.com</a>
+                <p class="text-xs font-mono uppercase tracking-widest font-bold">&copy; 2026 FU. <span class="en-only">All Rights Reserved.</span><span class="zh-only">版權所有。</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="closeLightbox()">
+        <div id="lb-close" onclick="closeLightbox()"><iconify-icon icon="ph:x-bold"></iconify-icon></div>
+        <img id="lb-img" src="" alt="">
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div class="min-h-screen flex flex-col px-8 md:px-16 py-10">
+            <div class="flex justify-between items-center max-w-5xl mx-auto w-full">
+                <a href="index.html" class="text-2xl font-['Syncopate'] font-bold text-black tracking-tighter cursor-none flex items-baseline gap-3">
+                    <span>FU.</span>
+                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-black/40">Resume &amp; Portfolio</span>
+                </a>
+                <button id="menu-close" class="w-11 h-11 rounded-full border border-black/15 flex items-center justify-content text-black/40 hover:text-black hover:border-black transition-all cursor-none" style="display:flex;align-items:center;justify-content:center;">
+                    <iconify-icon icon="ph:x-bold" class="text-base"></iconify-icon>
+                </button>
+            </div>
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 content-center max-w-5xl mt-16 mx-auto w-full">
+                <div>
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Pages</span><span class="zh-only">頁面</span></div>
+                    <nav>
+                        <a href="index.html" class="menu-nav-link"><span class="en-only">Home</span><span class="zh-only">首頁</span></a>
+                        <a href="projects.html" class="menu-nav-link"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a>
+                        <a href="resume.html" class="menu-nav-link"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></a>
+                        <a href="contact.html" class="menu-nav-link"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a>
+                    </nav>
+                </div>
+                <div class="lg:pt-16">
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Project Details</span><span class="zh-only">專案詳情</span></div>
+                    <nav>
+                        <a href="graduation-project.html" class="menu-sub-link"><span class="en-only">Graduation Project</span><span class="zh-only">畢業設計</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="bachelor-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Bachelor)</span><span class="zh-only">大學作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="master-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Master)</span><span class="zh-only">研究所作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="thesis.html" class="menu-sub-link" style="color:#111;"><span class="en-only">Master's Thesis · CoEvo</span><span class="zh-only">碩士論文 · CoEvo</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                    </nav>
+                    <div class="mt-12 pt-8 border-t border-black/6">
+                        <p class="text-[10px] font-mono text-black/20 uppercase tracking-widest font-bold"><span class="en-only">Based in Taiwan · Architectural Innovation Designer</span><span class="zh-only">台灣 · 建築創新設計師</span></p>
+                        <a href="mailto:zx26244623@gmail.com" class="mt-3 block text-xs font-mono text-black/35 hover:text-black transition-colors cursor-none">zx26244623@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function openLightbox(src) {
+        document.getElementById('lb-img').src = src;
+        document.getElementById('lightbox').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeLightbox(); }
+    });
+
+    /* Thesis images strip switcher */
+    const stripData = [
+        { 
+            title_zh: '順序化協作過程', 
+            title_en: 'Sequential Collaboration Process',
+            desc_zh: 'Sequential Collaboration Process (Architecture A)',
+            desc_en: 'Sequential Collaboration Process (Architecture A)'
+        },
+        { 
+            title_zh: '層級化協作過程', 
+            title_en: 'Hierarchical Collaboration Process',
+            desc_zh: 'Hierarchical Collaboration Process (Architecture B)',
+            desc_en: 'Hierarchical Collaboration Process (Architecture B)'
+        },
+        { 
+            title_zh: '層級化協作架構', 
+            title_en: 'Hierarchical Multi-Agent Architecture',
+            desc_zh: 'Hierarchical Multi-Agent Architecture (Architecture B+)',
+            desc_en: 'Hierarchical Multi-Agent Architecture (Architecture B+)'
+        }
+    ];
+    let stripIndex = 0;
+    function setStrip(idx) {
+        stripIndex = idx;
+        const currentLang = localStorage.getItem('pref-lang') || 'en';
+        document.querySelectorAll('.strip-tab').forEach((el, i) => el.classList.toggle('active', i === idx));
+        document.querySelectorAll('.strip-slide').forEach((el, i) => el.classList.toggle('active', i === idx));
+        
+        const title = currentLang === 'zh' ? stripData[idx].title_zh : stripData[idx].title_en;
+        const desc = currentLang === 'zh' ? stripData[idx].desc_zh : stripData[idx].desc_en;
+        
+        document.getElementById('strip-title').textContent = title;
+        document.getElementById('strip-desc').textContent = desc;
+    }
+
+    /* Nav transparency on scroll */
+    const nav = document.getElementById('main-nav');
+    window.addEventListener('scroll', () => {
+        const y = window.scrollY;
+        const vh = window.innerHeight;
+        if (y > vh * 0.7) {
+            nav.style.background = 'rgba(248,249,250,0.92)';
+            nav.style.backdropFilter = 'blur(24px)';
+            nav.style.borderBottom = '1px solid rgba(0,0,0,0.05)';
+            nav.querySelectorAll('a,button').forEach(el => { el.style.color = ''; });
+            nav.querySelector('a').style.color = '#111';
+        } else {
+            nav.style.background = 'transparent';
+            nav.style.backdropFilter = 'none';
+            nav.style.borderBottom = 'none';
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', e => gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: .15, ease: "power2.out" }));
+        document.querySelectorAll('a,button,.magnetic,.gallery-item,.abs-tooltip-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+        document.querySelectorAll('.magnetic').forEach(btn => {
+            btn.addEventListener('mousemove', e => {
+                const r = btn.getBoundingClientRect(), x = e.clientX-r.left-r.width/2, y = e.clientY-r.top-r.height/2;
+                gsap.to(btn, { x: x*.4, y: y*.4, duration: .3, ease: "power2.out" });
+                const t = btn.querySelector('.magnetic-text'); if(t) gsap.to(t, { x: x*.2, y: y*.2, duration: .3, ease: "power2.out" });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x:0, y:0, duration:.7, ease:"elastic.out(1,.3)" });
+                const t = btn.querySelector('.magnetic-text'); if(t) gsap.to(t, { x:0, y:0, duration:.7, ease:"elastic.out(1,.3)" });
+            });
+        });
+
+        gsap.registerPlugin(ScrollTrigger);
+        gsap.from('.title-reveal', { y: 80, opacity: 0, duration: 1.4, ease: "power4.out", delay: .5 });
+        gsap.utils.toArray('.reveal').forEach(el => {
+            gsap.to(el, { scrollTrigger: { trigger: el, start: "top 88%" }, y: 0, opacity: 1, duration: 1, ease: "power3.out" });
+        });
+        gsap.utils.toArray('.gallery-item').forEach((el, i) => {
+            gsap.from(el, { scrollTrigger: { trigger: el, start: "top 92%" }, y: 20, opacity: 0, duration: .6, delay: (i%4)*.08, ease: "power2.out" });
+        });
+
+        // Abstract paragraph staggered reveal
+        const abstractParas = document.querySelectorAll('.abstract-para');
+        if (abstractParas.length) {
+            const absObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const delay = parseInt(entry.target.dataset.delay || '0');
+                        setTimeout(() => entry.target.classList.add('visible'), delay);
+                        absObserver.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.15 });
+            abstractParas.forEach(p => absObserver.observe(p));
+        }
+
+        // Tooltip: stay visible when mouse is on the card; raise paragraph so card is not covered
+        document.querySelectorAll('.abs-tooltip-trigger').forEach(function(trigger) {
+            const tip = trigger.querySelector('.abs-tooltip');
+            if (!tip) return;
+            let hideTimeout = null;
+            function show() {
+                if (hideTimeout) clearTimeout(hideTimeout);
+                hideTimeout = null;
+                trigger.classList.add('tooltip-visible');
+                var para = trigger.closest('.abstract-para');
+                if (para) para.classList.add('tooltip-active');
+            }
+            function scheduleHide() {
+                if (hideTimeout) clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(function() {
+                    hideTimeout = null;
+                    trigger.classList.remove('tooltip-visible');
+                    var para = trigger.closest('.abstract-para');
+                    if (para) para.classList.remove('tooltip-active');
+                }, 220);
+            }
+            trigger.addEventListener('mouseenter', show);
+            trigger.addEventListener('mouseleave', scheduleHide);
+            tip.addEventListener('mouseenter', show);
+            tip.addEventListener('mouseleave', function() {
+                trigger.classList.remove('tooltip-visible');
+                var para = trigger.closest('.abstract-para');
+                if (para) para.classList.remove('tooltip-active');
+            });
+        });
+        // Tooltip images: click to open lightbox (enlarge)
+        document.querySelectorAll('.abs-tooltip .tt-images img').forEach(function(img) {
+            img.addEventListener('click', function(e) {
+                e.stopPropagation();
+                openLightbox(this.src);
+            });
+        });
+
+        // Strip carousel initial state
+        setStrip(0);
+
+        // Menu
+        const menuBtn = document.getElementById('menu-btn');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuClose = document.getElementById('menu-close');
+        if(menuBtn) menuBtn.addEventListener('click', e => { e.stopPropagation(); menuOverlay.classList.add('open'); document.body.style.overflow='hidden'; });
+        if(menuClose) menuClose.addEventListener('click', () => { menuOverlay.classList.remove('open'); document.body.style.overflow=''; });
+
+        // Language
+        const langToggle = document.getElementById('lang-toggle');
+        let currentLang = localStorage.getItem('pref-lang') || 'en';
+        function applyLang() {
+            document.body.classList.remove('lang-en','lang-zh');
+            document.body.classList.add('lang-'+currentLang);
+            if(langToggle) { const s = langToggle.querySelector('.magnetic-text'); if(s) s.innerText = currentLang==='en'?'中':'EN'; }
+        }
+        applyLang();
+        if(langToggle) langToggle.addEventListener('click', () => { 
+            currentLang=currentLang==='en'?'zh':'en'; 
+            localStorage.setItem('pref-lang',currentLang); 
+            applyLang(); 
+            setStrip(stripIndex); // Update the strip content text on toggle
+        });
+
+        initWebGL();
+    });
+
+    function initWebGL() {
+        const canvas = document.getElementById('webgl-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const scene = new THREE.Scene(), camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+        const uniforms = {
+            u_time: { value: 0 },
+            u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+            u_mouse: { value: new THREE.Vector2(0.5, 0.5) }
+        };
+        const mat = new THREE.ShaderMaterial({ uniforms, transparent: true,
+            vertexShader: `void main(){gl_Position=vec4(position,1.);}`,
+            fragmentShader: `
+            uniform float u_time; uniform vec2 u_resolution; uniform vec2 u_mouse;
+            vec3 p3(vec3 x){return mod(((x*34.)+1.)*x,289.);}
+            float sn(vec2 v){const vec4 C=vec4(.211324865,.366025403,-.577350269,.024390243);
+            vec2 i=floor(v+dot(v,C.yy)),x0=v-i+dot(i,C.xx),i1;i1=(x0.x>x0.y)?vec2(1,0):vec2(0,1);
+            vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.);
+            vec3 p=p3(p3(i.y+vec3(0,i1.y,1))+i.x+vec3(0,i1.x,1));
+            vec3 m=max(.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.);m=m*m;m=m*m;
+            vec3 x=2.*fract(p*C.www)-1.,h=abs(x)-.5,ox=floor(x+.5),a0=x-ox;
+            m*=1.79284291-.85373472*(a0*a0+h*h);vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.*dot(m,g);}
+            void main(){
+                vec2 st=gl_FragCoord.xy/u_resolution.xy;
+                float asp=u_resolution.x/u_resolution.y;
+                float md=distance(st,u_mouse);
+                float mouseWarp=0.04/(md*6.0+0.3);
+                vec2 dir=(md>0.001)?normalize(st-u_mouse):vec2(0.0);
+                vec2 warpUV=st+dir*mouseWarp*0.15;
+                float n1=sn(vec2(warpUV.x*asp*1.6+u_time*0.03,warpUV.y*1.6+u_time*0.028));
+                float n2=sn(vec2(warpUV.x*asp*3.2-u_time*0.045,warpUV.y*3.2-u_time*0.04));
+                float n3=sn(vec2(warpUV.x*asp*0.8+u_time*0.015,warpUV.y*0.8-u_time*0.02));
+                float nm=(n1+n2*0.6+n3*0.4)*0.5;
+                float halo=exp(-md*md*12.0)*0.35;
+                float pulse=0.5+0.5*sin(u_time*0.8);
+                float ring=smoothstep(0.22,0.18,md)*smoothstep(0.08,0.14,md)*0.15*pulse;
+                vec3 c1=vec3(0.985,0.985,0.995);
+                vec3 c2=vec3(0.92,0.93,0.97);
+                vec3 c3=vec3(0.84,0.87,0.94);
+                vec3 fc=mix(c1,c2,nm+0.5);
+                fc=mix(fc,c3,smoothstep(0.3,0.85,nm));
+                fc=mix(fc,vec3(0.88,0.91,0.98),halo+ring);
+                gl_FragColor=vec4(fc,1.0);}` });
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), mat));
+        let tMouse = new THREE.Vector2(.5,.5), cMouse = new THREE.Vector2(.5,.5);
+        document.addEventListener('mousemove', e => { tMouse.set(e.clientX/window.innerWidth, 1.-e.clientY/window.innerHeight); });
+        window.addEventListener('resize', () => { renderer.setSize(window.innerWidth,window.innerHeight); uniforms.u_resolution.value.set(window.innerWidth,window.innerHeight); });
+        (function animate(t){ uniforms.u_time.value=t*.001; cMouse.x+=(tMouse.x-cMouse.x)*.04; cMouse.y+=(tMouse.y-cMouse.y)*.04; uniforms.u_mouse.value.copy(cMouse); renderer.render(scene,camera); requestAnimationFrame(animate); })(0);
+    }
+    </script>
+</body>
+</html>

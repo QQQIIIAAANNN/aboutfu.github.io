@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FU. | SUBMERGED STORIES 水時敘事</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&family=Syncopate:wght@400;700&family=Noto+Serif+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.7);
+            --glass-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+            --text-primary: #111111;
+        }
+
+        body { background-color: #FAFAFA; color: var(--text-primary); font-family: 'Manrope', sans-serif; overflow-x: hidden; cursor: none; }
+        ::selection { background: rgba(17,17,17,.9); color: #fff; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } 
+        ::-webkit-scrollbar-track { background: transparent; } 
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 10px; }
+
+        /* Custom Cursor */
+        #custom-cursor { position: fixed; top: 0; left: 0; width: 12px; height: 12px; background: #111; border-radius: 50%; pointer-events: none; z-index: 10002; transform: translate(-50%, -50%); transition: width .3s cubic-bezier(.16,1,.3,1), height .3s cubic-bezier(.16,1,.3,1), background .3s; mix-blend-mode: difference; }
+        #custom-cursor.hover { width: 60px; height: 60px; background: rgba(255,255,255,.2); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.5); mix-blend-mode: normal; }
+
+        /* Noise & WebGL Background */
+        .noise-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 9998; background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E'); opacity: .04; mix-blend-mode: multiply; }
+        #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: .6; }
+
+        /* Typography */
+        .serif { font-family: 'Noto Serif TC', serif; }
+        .clip-text-wrap { overflow: hidden; display: inline-block; vertical-align: top; }
+        .clip-text { display: inline-block; transform: translateY(110%); opacity: 0; }
+        .char-wrap { overflow: hidden; display: inline-block; vertical-align: bottom; }
+        .char-anim { display: inline-block; transform: translateY(110%); opacity: 0; }
+
+        /* Advanced Glassmorphism */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow), inset 0 0 0 1px rgba(255,255,255,0.4);
+            border-radius: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-panel::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-20deg); animation: glassShine 6s infinite ease-in-out; pointer-events: none;
+        }
+        @keyframes glassShine { 0%, 50% { left: -100%; } 100% { left: 200%; } }
+
+        /* Sonar Pulse Marker */
+        .sonar-marker { position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; box-shadow: 0 0 15px rgba(255,255,255,0.8); cursor: pointer; z-index: 10; transform: translate(-50%, -50%); transition: transform 0.3s; }
+        .sonar-marker::after, .sonar-marker::before { content: ''; position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; border-radius: 50%; border: 1.5px solid #fff; transform: translate(-50%, -50%); animation: sonarPulse 2.5s infinite cubic-bezier(0.16, 1, 0.3, 1); }
+        .sonar-marker::before { animation-delay: 1.25s; border: 1px solid rgba(255,255,255,0.5); }
+        .sonar-marker:hover { transform: translate(-50%, -50%) scale(1.5); }
+        @keyframes sonarPulse { 0% { width: 100%; height: 100%; opacity: 1; } 100% { width: 400%; height: 400%; opacity: 0; } }
+
+        /* Expand Button */
+        .expand-btn { transition: all 0.3s ease; }
+        .expand-btn:hover { background: #111; color: #fff; }
+        .expand-btn:hover iconify-icon { color: #fff; }
+
+        /* Liquid Wipe Reveal */
+        .liquid-wipe-container { position: relative; overflow: hidden; }
+        .liquid-wipe-overlay { position: absolute; inset: 0; background: #FAFAFA; z-index: 2; transform-origin: top; }
+        .parallax-bg { will-change: transform; transform: scale(1.1); }
+
+        /* Lightbox */
+        .lightbox { position: fixed; inset: 0; z-index: 15000; background: rgba(255,255,255,.95); backdrop-filter: blur(30px); display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.4s ease; cursor: zoom-out; }
+        .lightbox.active { display: flex; opacity: 1; }
+        .lightbox img { max-width: 95vw; max-height: 90vh; object-fit: contain; border-radius: 1rem; box-shadow: 0 40px 100px rgba(0,0,0,.15); transform: scale(0.95); transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .lightbox.active img { transform: scale(1); }
+
+        /* Text Scroll Area */
+        .text-scroll-area::-webkit-scrollbar { width: 4px; }
+        .text-scroll-area::-webkit-scrollbar-track { background: rgba(0,0,0,0.03); border-radius: 10px; }
+        .text-scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 10px; }
+
+        /* Contributors UI */
+        .contributors-track { display: flex; align-items: center; gap: 2rem; overflow-x: auto; padding: 1.5rem 1rem; scrollbar-width: none; scroll-behavior: smooth; }
+        .contributors-track::-webkit-scrollbar { display: none; }
+        .contributor-item { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; flex-shrink: 0; cursor: none; }
+        .contributor-circle { width: 85px; height: 85px; border-radius: 50%; overflow: hidden; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; padding: 0.5rem; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s; }
+        .contributor-item:hover .contributor-circle { transform: translateY(-6px) scale(1.05); box-shadow: 0 15px 35px rgba(0,0,0,0.12); }
+        .contributor-circle img { width: 100%; height: 100%; object-fit: contain; }
+        .contributor-name { font-size: 11px; font-family: 'Noto Serif TC', serif; color: rgba(17,17,17,0.5); letter-spacing: 0.05em; text-align: center; white-space: nowrap; transition: color 0.3s; }
+        .contributor-item:hover .contributor-name { color: #111; font-weight: 500; }
+        
+        body.lang-en .zh-only { display: none !important; }
+        body.lang-zh .en-only { display: none !important; }
+
+        /* Award Badge */
+        .award-badge { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 999px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+        .award-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; display: block; animation: pulseDot 2s infinite; }
+        @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 70% { box-shadow: 0 0 0 6px rgba(255,255,255,0); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+
+        /* Menu Overlay */
+        #menu-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(250,250,250,0.97); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); opacity: 0; pointer-events: none; transition: opacity 0.4s ease; overflow-y: auto; }
+        #menu-overlay.open { opacity: 1; pointer-events: auto; }
+        .menu-nav-link { display: block; font-family: 'Syncopate', sans-serif; font-size: clamp(2.2rem, 5vw, 4.5rem); font-weight: 700; color: rgba(17,17,17,0.11); letter-spacing: -0.02em; padding: 0.4rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); transition: color 0.3s ease, padding-left 0.4s cubic-bezier(0.16,1,0.3,1); cursor: none; line-height: 1.15; }
+        .menu-nav-link:hover { color: #111; padding-left: 0.75rem; }
+        .menu-sub-link { display: flex; align-items: center; gap: 0.5rem; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(17,17,17,0.32); transition: color 0.25s; cursor: none; padding: 0.55rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+        .menu-sub-link:hover { color: #111; }
+    </style>
+</head>
+<body class="antialiased">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="noise-overlay"></div>
+    <div id="custom-cursor"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-6 transition-all duration-300 backdrop-blur-md bg-white/40 border-b border-white/50" id="main-nav">
+        <a href="index.html" class="text-2xl font-['Syncopate'] font-bold tracking-tighter cursor-none magnetic text-black">FU.</a>
+        <div class="flex items-center gap-6 lg:gap-10">
+            <ul class="gap-8 text-[11px] uppercase tracking-[0.15em] hidden lg:flex font-bold text-black/50 items-center">
+                <li><a href="index.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Home</span><span class="zh-only">首頁</span></a></li>
+                <li><a href="projects.html" class="hover:text-black transition-colors cursor-none text-black"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a></li>
+                <li><a href="resume.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Resume</span><span class="zh-only">個人履歷</span></a></li>
+                <li><a href="contact.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a></li>
+            </ul>
+            <div class="flex items-center gap-3">
+                <button id="lang-toggle" class="magnetic w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-[10px] font-bold text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none bg-white/50">
+                    <span class="magnetic-text">EN</span>
+                </button>
+                <button id="menu-btn" class="magnetic border border-black/20 bg-white/50 backdrop-blur-lg rounded-full px-6 py-2 text-xs uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text block">MENU</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 1. Hero Section -->
+    <section class="relative w-full h-screen flex flex-col justify-center items-center overflow-hidden pt-20 liquid-wipe-container">
+        <div class="absolute inset-0 z-0 overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=2560&auto=format&fit=crop" class="w-full h-full object-cover parallax-bg grayscale-[30%] opacity-90" alt="Water landscape">
+            <div class="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] via-white/40 to-transparent"></div>
+        </div>
+        
+        <div class="relative z-10 text-center max-w-5xl px-6">
+            <div class="clip-text-wrap mb-4">
+                <div class="clip-text font-['Syncopate'] text-[10px] font-bold tracking-[0.4em] text-black/50 uppercase">Graduation Thesis · 2023</div>
+            </div>
+            
+            <!-- 新增的獎項金標 -->
+            <div class="clip-text-wrap mb-2">
+                <div class="clip-text">
+                    <div class="mb-2 inline-block"><span class="award-badge"><span class="award-dot"></span>American Master Prize Winner</span></div>
+                </div>
+            </div>
+            
+            <br>
+            <h1 class="font-['Syncopate'] font-bold text-6xl md:text-8xl lg:text-[7rem] tracking-tighter text-[#111] leading-[0.85] mb-6 mix-blend-multiply">
+                <div class="clip-text-wrap"><div class="clip-text">SUBMERGED</div></div><br>
+                <div class="clip-text-wrap"><div class="clip-text text-black/40">STORIES</div></div>
+            </h1>
+            <div class="clip-text-wrap -mt-2 md:-mt-4 mb-8">
+                <h2 class="clip-text text-2xl md:text-3xl font-['Noto_Serif_TC'] text-black/80 font-medium">水時敘事——淹沒故土的紀念裝置</h2>
+            </div>
+        </div>
+
+        <div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-4 z-20">
+            <!-- <span class="text-[9px] font-mono tracking-[0.3em] uppercase text-black/40 font-bold">Discover</span> -->
+            <div class="relative w-8 h-8">
+                <div class="sonar-marker" style="top:50%; left:50%; background: #111;"></div>
+            </div>
+            <div class="w-[1px] h-16 bg-gradient-to-b from-black/40 to-transparent"></div>
+        </div>
+        <div class="liquid-wipe-overlay hero-wipe"></div>
+    </section>
+
+    <!-- 2. Preface & Historical Gallery -->
+    <section class="py-32 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10">
+        <div class="grid md:grid-cols-12 gap-12 items-end mb-16">
+            <div class="md:col-span-5">
+                <div class="text-[10px] font-['Syncopate'] tracking-[0.3em] text-black/30 uppercase font-bold mb-6">Preface · 序</div>
+                <h3 class="serif text-3xl leading-snug font-medium text-black narrative-split zh-only">2021 年的旱災，家鄉的鯉魚潭水庫水下的遺址開始頻繁出沒。做為一個印象深刻的契機，我開始找尋鯉魚潭水庫背後口耳相傳的故事……</h3>
+                <h3 class="serif text-3xl leading-snug font-medium text-black narrative-split en-only">The drought in 2021, underwater ruins at the Liyutan Reservoir in my hometown began to appear frequently. As a memorable opportunity, I began searching for the oral stories behind the Liyutan Reservoir...</h3>
+            </div>
+            <div class="md:col-span-6 md:col-start-7">
+                <p class="serif text-lg text-black/50 leading-loose narrative-split zh-only">水庫的發展雖成就了萬畝農田，支持台中與苗栗的人口與產業發展，但不可否認的是背後的犧牲：消失的村落與這片土地的故事。如今只能透過新開村居民及外移居民的打聽、民間記錄文本的調查、客家委員會官方資料等文資，才可拼湊出過去這片土地上居民們生活的全貌。</p>
+                <p class="serif text-lg text-black/50 leading-loose narrative-split en-only">While the development of the reservoir created vast expanses of farmland, supporting population and industrial growth in Taichung and Miaoli, the sacrifices were undeniable: the disappearance of villages and the stories of these lands. Only through inquiries from residents of Xinkai Village and those who migrated there, research into folk records, and official documents from the Hakka Affairs Council can we piece together a complete picture of the lives of the inhabitants of this land.</p>
+            </div>
+        </div>
+
+        <div class="glass-panel p-6 md:p-8 relative mt-10">
+            <div class="flex items-center justify-between mb-6 px-2">
+                <span class="text-[10px] font-mono tracking-widest uppercase text-black/40 font-bold"><iconify-icon icon="ph:archive-bold" class="mr-2"></iconify-icon>歷史照片檔案 Historical Archives</span>
+                <div class="flex gap-2">
+                    <button class="w-10 h-10 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors cursor-none" id="hist-prev"><iconify-icon icon="ph:arrow-left-bold"></iconify-icon></button>
+                    <button class="w-10 h-10 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors cursor-none" id="hist-next"><iconify-icon icon="ph:arrow-right-bold"></iconify-icon></button>
+                </div>
+            </div>
+            <div class="flex gap-4 overflow-x-auto gallery-track pb-4 snap-x snap-mandatory" id="hist-track">
+                <!-- Dynamically populated via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Story Block 1 -->
+    <section class="relative h-[150vh] w-full story-section">
+        <div class="sticky top-0 h-screen w-full overflow-hidden">
+            <div class="liquid-wipe-overlay section-wipe"></div>
+            <img src="https://static.wixstatic.com/media/1a29c1_e0321184347f4254aa2f2ea2265c0baf~mv2.jpg/v1/fill/w_1920,h_1080,al_c,q_85,enc_avif,quality_auto/1.jpg" class="w-full h-full object-cover parallax-img cursor-none" alt="鯉魚潭水庫與土地">
+            <div class="absolute inset-0 bg-white/20 pointer-events-none"></div>
+            <!-- Click to Expand Marker -->
+            <button class="absolute bottom-8 right-8 z-30 glass-panel expand-btn px-6 py-3 flex items-center gap-3 rounded-full cursor-none pointer-events-auto shadow-xl" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_e0321184347f4254aa2f2ea2265c0baf~mv2.jpg')">
+                <iconify-icon icon="ph:arrows-out-simple-bold" class="text-black text-lg"></iconify-icon>
+                <span class="text-[10px] font-mono tracking-widest uppercase font-bold text-black">Expand Image</span>
+            </button>
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center md:justify-end px-6 md:px-24 pointer-events-none">
+            <div class="glass-panel w-full max-w-lg p-10 md:p-14 pointer-events-auto shadow-2xl reveal-card h-fit">
+                <div class="text-[9px] font-['Syncopate'] tracking-[0.2em] text-black/40 uppercase font-bold mb-4 border-b border-black/10 pb-4"><span class="en-only">Chapter 01 · Sacrifice and Achievement</span><span class="zh-only">Chapter 01 · 犧牲與成就</span></div>
+                <p class="serif text-lg leading-relaxed text-[#111] narrative-split font-medium zh-only">水庫的發展雖成就了萬畝農田，支持台中與苗栗的人口與產業發展，但不可否認的是背後的犧牲：消失的村落與這片土地的故事。</p>
+                <p class="serif text-lg leading-relaxed text-[#111] narrative-split font-medium en-only">While the development of the reservoir created vast expanses of farmland, supporting population and industrial growth in Taichung and Miaoli, the sacrifices were undeniable: the disappearance of villages and the stories of these lands.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Story Block 2 -->
+    <section class="relative h-[150vh] w-full story-section">
+        <div class="sticky top-0 h-screen w-full overflow-hidden">
+            <div class="liquid-wipe-overlay section-wipe"></div>
+            <img src="https://static.wixstatic.com/media/1a29c1_e33ad9a69456482493c1a9b5a198d6a8~mv2.jpg/v1/fill/w_1920,h_1080,al_c,q_85,enc_avif,quality_auto/3.jpg" class="w-full h-full object-cover parallax-img cursor-none" alt="新開庄歷史族群分布">
+            <div class="absolute inset-0 bg-white/30 pointer-events-none"></div>
+            <button class="absolute bottom-8 right-8 z-30 glass-panel expand-btn px-6 py-3 flex items-center gap-3 rounded-full cursor-none pointer-events-auto shadow-xl" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_e33ad9a69456482493c1a9b5a198d6a8~mv2.jpg')">
+                <iconify-icon icon="ph:arrows-out-simple-bold" class="text-black text-lg"></iconify-icon>
+                <span class="text-[10px] font-mono tracking-widest uppercase font-bold text-black">Expand Image</span>
+            </button>
+        </div>
+        <div class="absolute inset-0 flex items-center justify-center md:justify-start px-6 md:px-24 pointer-events-none">
+            <div class="glass-panel w-full max-w-lg p-10 md:p-14 pointer-events-auto shadow-2xl reveal-card h-fit">
+                <div class="text-[9px] font-['Syncopate'] tracking-[0.2em] text-black/40 uppercase font-bold mb-4 border-b border-black/10 pb-4"><span class="en-only">Chapter 02 · Ethnic Collision</span><span class="zh-only">Chapter 02 · 族群碰撞</span></div>
+                <p class="serif text-lg leading-relaxed text-[#111] narrative-split font-medium zh-only">進一步分析這裡各個時期的族群分布，發現新開地區的歷史其實包含著客家人與巴宰族、泰雅族、日本人等。橫跨過乙未戰爭與太平洋戰爭，衍生出三段關鍵的民族發展歷程。</p>
+                <p class="serif text-lg leading-relaxed text-[#111] narrative-split font-medium en-only">Further analysis of the distribution of ethnic groups reveals that Xinkai's history includes Hakka, Bazai, Atayal, and Japanese peoples. Spanning the Sino-Japanese and Pacific Wars, it evolved through three key stages of ethnic development.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. LOST Stats Section -->
+    <section class="py-32 px-6 md:px-12 max-w-[1200px] mx-auto relative z-10">
+        <div class="text-center mb-16 reveal-card">
+            <h3 class="font-['Syncopate'] text-[11px] font-bold tracking-[0.4em] text-black/40 mb-3 uppercase">The Cost</h3>
+            <h2 class="font-['Syncopate'] text-4xl font-bold tracking-widest text-[#111] mb-6">LOST...</h2>
+            <div class="w-16 h-[2px] bg-black/10 mx-auto"></div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 text-center">
+            <div class="glass-panel p-10 reveal-card hover:-translate-y-2 transition-transform duration-500">
+                <iconify-icon icon="ph:squares-four-light" class="text-5xl text-black/40 mb-6"></iconify-icon>
+                <div class="text-5xl font-['Syncopate'] font-bold text-[#111] mb-3 count-up" data-target="432">0</div>
+                <div class="text-sm font-serif text-black/60 tracking-wider"><span class="zh-only">公頃土地</span><span class="en-only">Hectares of Land</span></div>
+            </div>
+            <div class="glass-panel p-10 reveal-card hover:-translate-y-2 transition-transform duration-500 delay-100">
+                <iconify-icon icon="ph:house-line-light" class="text-5xl text-black/40 mb-6"></iconify-icon>
+                <div class="text-5xl font-['Syncopate'] font-bold text-[#111] mb-3 count-up" data-target="1300">0</div>
+                <div class="text-sm font-serif text-black/60 tracking-wider"><span class="zh-only">受影響戶數</span><span class="en-only">Affected Households</span></div>
+            </div>
+            <div class="glass-panel p-10 reveal-card hover:-translate-y-2 transition-transform duration-500 delay-200">
+                <iconify-icon icon="ph:money-light" class="text-5xl text-black/40 mb-6"></iconify-icon>
+                <div class="text-5xl font-['Syncopate'] font-bold text-[#111] mb-3"><span class="count-up" data-target="8500">0</span><span class="text-2xl ml-1">W</span></div>
+                <div class="text-sm font-serif text-black/60 tracking-wider"><span class="zh-only">平均農損 / 年</span><span class="en-only">Average Agricultural Loss / Year</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Story Block 3 & 4 (Challenge + Design Concept with inner Bridge image) -->
+    <section class="relative h-[250vh] w-full story-section">
+        <div class="sticky top-0 h-screen w-full overflow-hidden bg-[#E8EAEB]">
+            <div class="liquid-wipe-overlay section-wipe"></div>
+            <!-- Focus image 2_edited vertically centered -->
+            <img src="https://static.wixstatic.com/media/1a29c1_d5675f85938248a1a592d14e427fd738~mv2.jpg/v1/fill/w_1920,h_1080,al_c,q_85,enc_avif,quality_auto/2_edited.jpg" class="w-full h-full object-cover parallax-img mix-blend-multiply opacity-80 cursor-none" alt="水位與土地關係">
+            <div class="absolute inset-0 bg-gradient-to-t from-white/90 via-white/20 to-white/90 pointer-events-none"></div>
+            <button class="absolute bottom-8 right-8 z-30 glass-panel expand-btn px-6 py-3 flex items-center gap-3 rounded-full cursor-none pointer-events-auto shadow-xl" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_d5675f85938248a1a592d14e427fd738~mv2.jpg')">
+                <iconify-icon icon="ph:arrows-out-simple-bold" class="text-black text-lg"></iconify-icon>
+                <span class="text-[10px] font-mono tracking-widest uppercase font-bold text-black">Expand Background Map</span>
+            </button>
+        </div>
+        
+        <div class="absolute top-0 left-0 w-full h-full flex flex-col justify-between px-6 md:px-24 py-[15vh] pointer-events-none">
+            <!-- Top Box: The Challenge -->
+            <div class="glass-panel w-full max-w-xl p-10 md:p-12 pointer-events-auto shadow-2xl reveal-card h-fit mt-10">
+                <div class="text-[9px] font-['Syncopate'] tracking-[0.2em] text-black/40 uppercase font-bold mb-4 border-b border-black/10 pb-4">The Challenge</div>
+                <p class="serif text-lg leading-relaxed text-[#111] narrative-split font-medium zh-only">水庫的發展導致田地損失、人口遷移及感情消逝。水面因為季節落差更高達 30 米，該如何借用這樣的時間關係讓水幫助重塑故土、活化地方成為課題。</p>
+                <p class="serif text-lg leading-relaxed text-[#111] narrative-split font-medium en-only">Reservoir development led to loss of farmland, migration, and fading sentiment. With water levels fluctuating by 30 meters seasonally, the challenge is how to use this time relationship to let water reshape the land and revitalize the region.</p>
+            </div>
+
+            <!-- Bottom Box: Design Concept with Bridge Image -->
+            <div class="glass-panel w-full max-w-xl p-8 md:p-10 pointer-events-auto shadow-2xl reveal-card h-fit mb-10 self-end" style="background: rgba(255,255,255,0.7);">
+                <div class="text-[9px] font-['Syncopate'] tracking-[0.2em] text-black/40 uppercase font-bold mb-5 border-b border-black/10 pb-4"><span class="en-only">Design Concept</span><span class="zh-only">Design Concept · 設計概念</span></div>
+                
+                <div class="mb-6 rounded-xl overflow-hidden shadow-md aspect-[1564/278] cursor-none relative group" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_dc7c78cb95af4be2aebe162000a330f0~mv2.jpg')">
+                    <img src="https://static.wixstatic.com/media/1a29c1_dc7c78cb95af4be2aebe162000a330f0~mv2.jpg/v1/fill/w_1564,h_278,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/2_edited.jpg" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt="橋的設計概念">
+                    <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center pointer-events-none">
+                        <iconify-icon icon="ph:magnifying-glass-plus-bold" class="text-white text-2xl"></iconify-icon>
+                    </div>
+                </div>
+
+                <p class="serif text-[17px] leading-relaxed text-[#111] narrative-split font-medium zh-only">考量於本基地特殊的淹沒水文性質，以此處歷史最具意義的行易橋與永通橋為靈感，置入多個「橋」一般的裝置融入水位的自然起伏消長。不僅營造隨時間詮釋基地的紀念性景觀，也連結並活化新開村。</p>
+                <p class="serif text-[17px] leading-relaxed text-[#111] narrative-split font-medium en-only">Considering the site's unique submerged hydrology, the design draws inspiration from the historically significant Xingyi and Yongtong Bridges. Multiple "bridge-like" structures are integrated to reflect natural water level fluctuations, creating a commemorative landscape that evolves over time and revitalizes Xinkai Village.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Interactive Full Screen Map & Flow Zones -->
+    <section class="relative w-full bg-[#FAFAFA] py-32 z-10">
+        <div class="text-center max-w-4xl mx-auto px-6 mb-16 reveal-card">
+            <h2 class="font-['Syncopate'] text-3xl font-bold tracking-tight mb-6 text-[#111]">MAPPING THE MEMORY</h2>
+            <p class="serif text-lg text-black/60 narrative-split zh-only">透過衛星圖資的調查與在地耆老的訪問，得以還原出這片水下村落的全貌。作為故事發展的舞台，將透過水面上的「橋」，閱讀消失的蹤跡與故事。</p>
+            <p class="serif text-lg text-black/60 narrative-split en-only">Through satellite surveys and interviews with local elders, we reconstructed the full picture of this underwater village. As the stage for our story, the "bridges" on the water allow visitors to read the disappeared traces and their history.</p>
+        </div>
+
+        <!-- Big Map with Sonar Markers triggering Random Historical Photos -->
+        <div class="relative w-full max-w-[1600px] mx-auto rounded-[2.5rem] overflow-hidden shadow-2xl glass-panel p-2 md:p-4 mb-24 reveal-card group">
+            <div class="relative w-full rounded-[2rem] overflow-hidden cursor-none">
+                <img src="https://static.wixstatic.com/media/1a29c1_62a9311c6fa2440b816a0e3499008f4b~mv2.jpg/v1/fill/w_2500,h_1400,al_c,q_90,enc_avif,quality_auto/11_%E6%B0%B4%E6%99%82%E6%95%98%E4%BA%8B_%E6%B1%BA%E9%81%B8%E8%A8%AD%E8%A8%88%E5%9C%96%E6%AA%941-01.jpg" class="w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]" alt="水下村落全貌" onclick="openLightbox(this.src)">
+                <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none flex items-center justify-center">
+                    <div class="glass-panel px-6 py-3 rounded-full flex items-center gap-3">
+                        <iconify-icon icon="ph:magnifying-glass-plus-bold" class="text-black text-xl"></iconify-icon>
+                        <span class="text-xs font-bold uppercase tracking-widest text-black">Click to Explore Map</span>
+                    </div>
+                </div>
+                <!-- Interactive Sonar Markers -->
+                <div class="sonar-marker" style="top: 35%; left: 25%;" title="Zone A: 點擊喚醒記憶" onclick="window.openRandomHistoricalPhoto(event)"></div>
+                <div class="sonar-marker" style="top: 50%; left: 50%;" title="Zone B: 點擊喚醒記憶" onclick="window.openRandomHistoricalPhoto(event)"></div>
+                <div class="sonar-marker" style="top: 65%; left: 75%;" title="Zone C: 點擊喚醒記憶" onclick="window.openRandomHistoricalPhoto(event)"></div>
+                
+                <div class="absolute bottom-6 left-6 pointer-events-none glass-panel px-4 py-2 rounded-full hidden md:block opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <span class="text-[10px] font-mono font-bold tracking-widest text-black/60 uppercase">💡 點擊聲納點喚出歷史回憶</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flow Gallery for Zones (Long Text Scroll) -->
+        <div class="max-w-[1600px] mx-auto px-6 reveal-card">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                <div>
+                    <div class="text-[10px] font-['Syncopate'] tracking-[0.3em] text-black/40 uppercase font-bold mb-2">Flow Analysis</div>
+                    <h3 class="serif text-xl font-bold text-[#111]">三區基地敘事與水位變化</h3>
+                </div>
+                <div class="flex gap-2">
+                    <button class="w-12 h-12 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors cursor-none" id="flow-prev"><iconify-icon icon="ph:arrow-left-bold"></iconify-icon></button>
+                    <button class="w-12 h-12 rounded-full border border-black/10 flex items-center justify-center hover:bg-black hover:text-white transition-colors cursor-none" id="flow-next"><iconify-icon icon="ph:arrow-right-bold"></iconify-icon></button>
+                </div>
+            </div>
+            
+            <div class="flex gap-6 overflow-x-auto gallery-track pb-8 snap-x snap-mandatory" id="flow-track">
+                <script>
+                    const flowData =[
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_319645c063c94219bd8eedf292ce51d6~mv2.jpg', 
+                            title_zh: 'A區 - 基地區域1',
+                            title_en: 'Zone A - Base Area 1',
+                            desc_zh: 'A區位在代表史前文明的網形區域，曾是泰雅族的祖遺林場，也是客家人後來開墾建立的新開庄網形聚落與良田所在。這個設計會以淹沒在水下 60M 的網形伯公作為主角，三個階段將呈現土地最初的樣貌，以及後來客家人開墾前所遭遇的逆境，以及過去寄託於伯公，生活逐漸明朗的土地經驗。此處建築將會藉由漂浮的聚乙烯結構，來讓迷宮平台有限的上下浮動形成這個故事場域。',
+                            desc_en: 'Zone A is located in the Net-shaped area representing prehistoric civilization. It was once the ancestral forest of the Atayal people and later became the Net-shaped settlement and fertile fields established by Hakka pioneers. The design centers on the Net-shaped Bogong (Earth God) submerged 60M underwater. The three stages present the land\'s original state, the adversity Hakka pioneers faced, and the gradual stabilization of life through faith in Bogong. The architecture uses floating polyethylene structures to create a labyrinth platform that fluctuates with water levels.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_0b50a99b49ed40e5bec4a4542466da69~mv2.jpg', 
+                            title_zh: 'A區 3-6月 · 水位 270 W.L.(M)',
+                            title_en: 'Zone A Mar-Jun · Water Level 270 W.L.(M)',
+                            desc_zh: '低水位下落時，露出的「森林」讓視線看見伯公攏遺跡，紀念並象徵最初此處為泰雅族族遺林場與史前文明。',
+                            desc_en: 'During low water levels, the exposed "forest" reveals the Bogong ruins, commemorating the original Atayal ancestral forest and prehistoric civilization.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_6f6778e7ed7344e59a56676262bd7565~mv2.jpg', 
+                            title_zh: 'A區 7-10月 · 水位 300 W.L.(M)',
+                            title_en: 'Zone A Jul-Oct · Water Level 300 W.L.(M)',
+                            desc_zh: '抬高的水位讓建築只留下一片如同未開發的過境之地，紀念最初客家人與巴宰族人屯墾於平地時，遭受侵擾及洪患，以及多次入墾失敗的心境。',
+                            desc_en: 'High water levels leave the structure as an undeveloped transit land, commemorating the initial Hakka and Bazai settlers\' struggles with raids, floods, and multiple failed attempts to settle.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_2153f56c648a4c42b784a26bd96eb39c~mv2.jpg', 
+                            title_zh: 'A區 11-2月 · 水位 285 W.L.(M)',
+                            title_en: 'Zone A Nov-Feb · Water Level 285 W.L.(M)',
+                            desc_zh: '參與者走入製造霧的迷宮後，將在霧外迷失、霧中又透過伯公的引導找到方向，體會並紀念當初客家族群寄託伯公信仰慢慢落地生根的時代。',
+                            desc_en: 'Participants enter a fog-generating labyrinth, getting lost outside the fog but finding direction through Bogong\'s guidance within it, experiencing the era when the Hakka community slowly put down roots through faith.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_87884433774c403d84221d9c1de460df~mv2.jpg', 
+                            title_zh: 'B區 - 基地區域2',
+                            title_en: 'Zone B - Base Area 2',
+                            desc_zh: 'B區位於舊台三線附近，曾是漢番交界線，也是後來的隘勇線，代表著殖民時期不斷變動的分界與碰撞的族群關係。這個設計以此處兩側合院遺址為角，圍繞主體舊台三縣變化，象徵並紀念殖民時期客家人與泰雅族從爭鬥到和解的過程。此處建築將使用輕質混凝土艙式漂浮結構，受固定樁套環及滑軌固定上下飄動及轉動。',
+                            desc_en: 'Zone B is located near the Old Provincial Highway 3, once the boundary between Han and indigenous peoples, representing changing colonial frontiers and colliding ethnic relations. The design uses the courtyard ruins on both sides to symbolize the transition from conflict to reconciliation between Hakka and Atayal peoples. The structure uses lightweight concrete cabin-style floating units, fixed by piles and rails to allow vertical movement and rotation.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_112cc265d33c42ffbd7b5c8443b63444~mv2.jpg', 
+                            title_zh: 'B區 3-6月 · 水位 270 W.L.(M)',
+                            title_en: 'Zone B Mar-Jun · Water Level 270 W.L.(M)',
+                            desc_zh: '藉由水位降低讓甲板及船體旋轉為糾結的連續空間，如同殖民初政治真空時期，客家人忙於抗戰無力抵抗泰雅族的報復及土地奪回，紀念紛爭的時代。',
+                            desc_en: 'Low water levels rotate the decks into a tangled continuous space, reflecting the political vacuum of early colonization when Hakka settlers struggled to resist Atayal retaliation and land reclamation.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_76f2692668424f838f04bce7d59adda9~mv2.jpg', 
+                            title_zh: 'B區 7-10月 · 水位 300 W.L.(M)',
+                            title_en: 'Zone B Jul-Oct · Water Level 300 W.L.(M)',
+                            desc_zh: '藉由水位升高讓甲板及船體旋轉為各自平行無交集但朝向一致的合院，紀念隨著時間過去，在各種抵抗同化及壓迫的過程中，客家人與泰雅族逐漸體認到同為被侵略者的立場。',
+                            desc_en: 'High water levels rotate the decks into parallel but non-intersecting courtyards, commemorating the growing realization over time that both Hakka and Atayal peoples were victims of oppression and assimilation.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_47a22b5a761947e5ae667ccfd1a12caa~mv2.jpg', 
+                            title_zh: 'B區 11-2月 · 水位 285 W.L.(M)',
+                            title_en: 'Zone B Nov-Feb · Water Level 285 W.L.(M)',
+                            desc_zh: '藉由水位降低讓甲板及船體旋轉為合併共好的回院共用稻埕，如同過去兩個族群在遭遇上逐漸認同彼此，達成意識和解。',
+                            desc_en: 'Lower water levels rotate the decks into a shared courtyard and threshing floor, symbolizing the gradual mutual identification and conscious reconciliation between the two ethnic groups.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_161ebe5db2424bf1b08c97bae76f2565~mv2.jpg', 
+                            title_zh: 'C區 - 基地區域3',
+                            title_en: 'Zone C - Base Area 3',
+                            desc_zh: 'C區位於過去通向新開庄半路上的將軍廟，就像一個連結新舊的節點。這次的設計將以將軍廟作為主角，因此將以通向新舊村的道路作為軸線去設計，形成不同時期的浴場模式，代表著戰後「二次殖民」的異族文化衝擊、美援後逐漸穩定的生活，以及村落受到水庫計畫的淹沒與重生。此處建築將使用箱式結構基礎，容納控制水門的裝置與其他蓄水空間。',
+                            desc_en: 'Zone C is centered on the General\'s Temple, a node connecting the old and new Xinkai Village. The design uses the road connecting the villages as an axis for a multi-seasonal bathhouse mode, representing the post-war cultural impact, stabilized life after US aid, and the village\'s submergence and rebirth under the reservoir plan. The structure uses a box foundation housing water gate controls and storage spaces.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_2dddb4475e8545709c83a1dfeac34753~mv2.jpg', 
+                            title_zh: 'C區 3-6月 · 水位 270 W.L.(M)',
+                            title_en: 'Zone C Mar-Jun · Water Level 270 W.L.(M)',
+                            desc_zh: '在低水位時，浴場可看見水位退去後的村庄遺址區域，主浴池位於浴場軸線的兩側可停留泡湯互動，紀念戰後移民潮的多元文化衝擊，以及美援後生活逐漸穩定發展的舊村落。',
+                            desc_en: 'At low water levels, the bathhouse overlooks the exposed village ruins. Main pools on both sides of the axis allow for social bathing, commemorating the cultural impact of post-war migration and the stabilization of life in the old village.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_82bc6419c49e4097a91f94e76a219420~mv2.jpg', 
+                            title_zh: 'C區 7-10月 · 水位 300 W.L.(M)',
+                            title_en: 'Zone C Jul-Oct · Water Level 300 W.L.(M)',
+                            desc_zh: '在 7-10 月時颱風季將會灌滿外側的浴場，讓一部分區域成為深水池無法使用，此時主浴池位在封閉可看見水下的將軍廟浴池，紀念並默哀因為淹沒而逝去的土地和記憶。',
+                            desc_en: 'During the typhoon season (Jul-Oct), the outer bathhouse is flooded, leaving it unusable. The main pool shifts to the enclosed General\'s Temple area, offering views underwater to commemorate lost land and memories.'
+                        },
+                        {
+                            src: 'https://static.wixstatic.com/media/1a29c1_ea22de71f1594f949d7ae0eee016253c~mv2.jpg', 
+                            title_zh: 'C區 11-2月 · 水位 285 W.L.(M)',
+                            title_en: 'Zone C Nov-Feb · Water Level 285 W.L.(M)',
+                            desc_zh: '11-2月時水位稍微降低之後，將於浴場軸線上留下淺水池，將水路重新聚焦於從將軍廟通往新開村的路徑，此時在將軍廟前後軸線上的浴池將成為主浴池，也是象徵沐浴重生的路徑，參與者將體驗新開庄故土不復存在的心境，沿路沐浴從舊庄走向新開，形同漫長的轉念過程。',
+                            desc_en: 'From Nov-Feb, as water levels recede slightly, shallow pools form along the bathhouse axis, refocusing on the path from the temple to the new village. These axial pools become the main bathhouse, symbolizing a path of rebirth and a long process of moving from the lost past to the new beginning.'
+                        }
+                    ];
+                    
+                    flowData.forEach(d => {
+                        document.write(`
+                            <div class="flex-shrink-0 w-[85vw] md:w-[600px] snap-center cursor-none group relative h-[550px] flex flex-col glass-panel overflow-hidden border border-black/5">
+                                <div class="h-1/2 w-full relative overflow-hidden flex-shrink-0 bg-[#e8e8e8]">
+                                    <img src="${d.src}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter grayscale-[10%] group-hover:grayscale-0" onclick="openLightbox(this.src)">
+                                    <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none flex items-center justify-center">
+                                        <iconify-icon icon="ph:arrows-out-simple-bold" class="text-white text-3xl"></iconify-icon>
+                                    </div>
+                                </div>
+                                <div class="h-1/2 p-8 overflow-y-auto text-scroll-area flex-grow bg-white/40">
+                                    <h4 class="font-['Noto_Serif_TC'] font-bold text-lg mb-4 text-[#111] border-b border-black/10 pb-3">
+                                        <span class="zh-only">${d.title_zh}</span><span class="en-only">${d.title_en}</span>
+                                    </h4>
+                                    <p class="text-[15px] text-black/70 font-serif leading-loose">
+                                        <span class="zh-only">${d.desc_zh}</span><span class="en-only">${d.desc_en}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        `);
+                    });
+                </script>
+            </div>
+            <div class="flex justify-end mt-2"><span class="text-[10px] text-black/30 uppercase tracking-widest font-mono">Scroll text to read more ↓</span></div>
+        </div>
+    </section>
+
+    <!-- 7. Conclusion Image (B DESIGN) -->
+    <section class="relative h-[120vh] w-full story-section">
+        <div class="sticky top-0 h-screen w-full overflow-hidden">
+            <div class="liquid-wipe-overlay section-wipe"></div>
+            <img src="https://static.wixstatic.com/media/1a29c1_efada40d2b384558a0445634c4324856~mv2.jpg/v1/fill/w_2500,h_1400,al_c,q_90,enc_avif,quality_auto/B%20DESIGN.jpg" class="w-full h-full object-cover parallax-img cursor-none" alt="水時敘事設計">
+            <div class="absolute inset-0 bg-white/10 pointer-events-none"></div>
+            <button class="absolute bottom-8 right-8 z-30 glass-panel expand-btn px-6 py-3 flex items-center gap-3 rounded-full cursor-none pointer-events-auto shadow-xl" onclick="openLightbox('https://static.wixstatic.com/media/1a29c1_efada40d2b384558a0445634c4324856~mv2.jpg')">
+                <iconify-icon icon="ph:arrows-out-simple-bold" class="text-black text-lg"></iconify-icon>
+                <span class="text-[10px] font-mono tracking-widest uppercase font-bold text-black">Expand Render</span>
+            </button>
+        </div>
+        <div class="absolute inset-0 flex items-end justify-center pb-24 px-6 pointer-events-none">
+            <div class="glass-panel w-full max-w-3xl p-10 md:p-12 pointer-events-auto shadow-2xl reveal-card text-center" style="background: rgba(255,255,255,0.85);">
+                <div class="serif text-xl md:text-2xl leading-loose text-[#111] narrative-split font-bold zh-only">
+                        荒地到田路與橋頭的漸進式關係，<br>重新詮釋先民走出來的土地感情。<br>水時敘事，使人們能串聯起所有曾發生於新開村背後的故事與文化，<br>紀念故土，並繼續將這段故事留存下去。
+                </div>
+                <div class="serif text-xl md:text-2xl leading-loose text-[#111] narrative-split font-bold en-only">
+                        The progressive relationship from wasteland to farmland roads and bridgeheads<br>reinterprets the land sentiment established by ancestors.<br>The Water Narrative allows people to connect all the stories and culture behind Xinkai Village,<br>commemorating the homeland and ensuring these stories endure.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. Video Cover & Play -->
+    <section class="py-24 px-6 md:px-12 max-w-[1400px] mx-auto relative z-10 reveal-card">
+        <div class="glass-panel p-4 md:p-6 rounded-[3rem]">
+            <div class="relative w-full rounded-[2.5rem] overflow-hidden bg-black aspect-video group cursor-none">
+                <img src="https://static.wixstatic.com/media/1a29c1_d4304f90aa79473d986f48b565d50bff~mv2.jpg/v1/fill/w_1920,h_1080,al_c,q_90,enc_avif,quality_auto/cover.jpg" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-30 transition-opacity duration-500" id="video-cover">
+                <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10" id="play-btn-wrap">
+                    <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md border border-white/50 flex items-center justify-center text-white transition-transform duration-500 group-hover:scale-110 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                        <iconify-icon icon="ph:play-fill" class="text-4xl ml-2"></iconify-icon>
+                    </div>
+                </div>
+                <iframe id="yt-video" class="absolute inset-0 w-full h-full opacity-0 pointer-events-none transition-opacity duration-500" src="https://www.youtube.com/embed/9RblBOy4gYo?enablejsapi=1" title="水時敘事" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. Contributors / Awards Section -->
+    <section class="py-16 px-6 relative z-10 bg-white/40 border-t border-black/5 reveal-card">
+        <div class="max-w-[1200px] mx-auto text-center">
+            <h2 class="font-['Noto_Serif_TC'] text-3xl md:text-4xl text-[#111] font-medium mb-3">Contributors</h2>
+            <div class="w-12 h-[2px] bg-[#111] mx-auto mb-10"></div>
+            
+            <div class="flex items-center justify-center relative px-10">
+                <button class="absolute left-0 w-10 h-10 flex items-center justify-center text-black/30 hover:text-black transition-colors cursor-none" id="contrib-prev"><iconify-icon icon="ph:caret-left-bold" class="text-3xl"></iconify-icon></button>
+                
+                <div class="contributors-track w-full" id="contrib-track">
+                    <script>
+                        const contributors =[
+                            { src: 'https://static.wixstatic.com/media/1a29c1_9495eed0b4f348cbaed208d16b100e1e~mv2.png', zh: '美國建築大師獎', en: 'Architecture MasterPrize' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_390b8a34adfe42e4b642220ff129c5d6~mv2.jpg', zh: 'IDC設計戰國策', en: 'IDC Design Battle' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_cdab8a329d14464d9497b6327ffe024c~mv2.png', zh: '農林航空測量所', en: 'Aerial Survey Office, AFNA' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_44504333f2534ee8a7c8c8314907957e~mv2.png', zh: '台灣水利局', en: 'Water Resources Agency' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_1cc72decb15f4de884912b508ddf9116~mv2.png', zh: '台灣客家文化館', en: 'Taiwan Hakka Museum' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_24354f03917541ad808f38eae331d46c~mv2.jpg', zh: '苗栗卓蘭鎮公所', en: 'Zhuolan Township Office' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_723a4ec546194a02bf3ec02ad909b070~mv2.png', zh: '客家委員會', en: 'Hakka Affairs Council' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_e9123741aafb4b12bd9fd8d60af494ab~mv2.jpg', zh: '苗栗縣大湖新開村', en: 'Xinkai Village, Dahu' },
+                            { src: 'https://static.wixstatic.com/media/1a29c1_5b1969a18dd541b591f16fdd58c38625~mv2.jpg', zh: '苗栗縣鯉魚潭水庫', en: 'Liyutan Reservoir' }
+                        ];
+                        contributors.forEach(c => {
+                            document.write(`
+                                <div class="contributor-item" onclick="openLightbox('${c.src}')">
+                                    <div class="contributor-circle">
+                                        <img src="${c.src}" alt="${c.zh}" loading="lazy">
+                                    </div>
+                                    <span class="contributor-name">
+                                        <span class="zh-only">${c.zh}</span>
+                                        <span class="en-only">${c.en}</span>
+                                    </span>
+                                </div>
+                            `);
+                        });
+                    </script>
+                </div>
+
+                <button class="absolute right-0 w-10 h-10 flex items-center justify-center text-black/30 hover:text-black transition-colors cursor-none" id="contrib-next"><iconify-icon icon="ph:caret-right-bold" class="text-3xl"></iconify-icon></button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Nav -->
+    <section class="py-16 px-6 md:px-16 max-w-[1600px] mx-auto flex justify-between items-center border-t border-black/10 relative z-10">
+        <a href="projects.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/40 hover:text-black transition-colors cursor-none">
+            <iconify-icon icon="ph:arrow-left-bold" class="magnetic-text"></iconify-icon>
+            <span class="magnetic-text"><span class="zh-only">所有專案</span><span class="en-only">All Projects</span></span>
+        </a>
+        <a href="bachelor-works.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/40 hover:text-black transition-colors cursor-none">
+            <span class="magnetic-text"><span class="zh-only">大學作品集</span><span class="en-only">Bachelor Works</span></span>
+            <iconify-icon icon="ph:arrow-right-bold" class="magnetic-text"></iconify-icon>
+        </a>
+    </section>
+
+    <footer class="relative z-10 w-full backdrop-blur-xl bg-white/30 border-t border-black/5 py-8 px-6 md:px-12">
+        <div class="max-w-[1600px] mx-auto flex justify-between items-center text-black/40">
+            <a href="index.html" class="text-xl font-['Syncopate'] font-bold text-[#111]">FU.</a>
+            <p class="text-[10px] font-mono uppercase tracking-widest font-bold">&copy; 2026 FU. <span class="en-only">All Rights Reserved.</span><span class="zh-only">版權所有。</span></p>
+        </div>
+    </footer>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <button type="button" class="absolute top-8 right-8 w-12 h-12 rounded-full border border-black/20 flex items-center justify-center text-black bg-white hover:bg-black hover:text-white transition-colors cursor-none z-50 shadow-xl" id="lightbox-close">
+            <iconify-icon icon="ph:x-bold" class="text-xl"></iconify-icon>
+        </button>
+        <img src="" alt="" id="lightbox-img">
+    </div>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div class="min-h-screen flex flex-col px-8 md:px-16 py-10">
+            <div class="flex justify-between items-center max-w-5xl mx-auto w-full">
+                <a href="index.html" class="text-2xl font-['Syncopate'] font-bold text-black tracking-tighter cursor-none flex items-baseline gap-3">
+                    <span>FU.</span>
+                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-black/40">Resume &amp; Portfolio</span>
+                </a>
+                <button id="menu-close" class="w-11 h-11 rounded-full border border-black/15 flex items-center justify-center text-black/40 hover:text-black hover:border-black transition-all cursor-none">
+                    <iconify-icon icon="ph:x-bold" class="text-base"></iconify-icon>
+                </button>
+            </div>
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 content-center max-w-5xl mt-16 mx-auto w-full">
+                <div>
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Pages</span><span class="zh-only">頁面</span></div>
+                    <nav>
+                        <a href="index.html" class="menu-nav-link"><span class="en-only">Home</span><span class="zh-only">首頁</span></a>
+                        <a href="projects.html" class="menu-nav-link" style="color:#111;"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a>
+                        <a href="resume.html" class="menu-nav-link"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></a>
+                        <a href="contact.html" class="menu-nav-link"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a>
+                    </nav>
+                </div>
+                <div class="lg:pt-16">
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Project Details</span><span class="zh-only">專案詳情</span></div>
+                    <nav>
+                        <a href="graduation-project.html" class="menu-sub-link" style="color:#111;"><span class="en-only">Graduation Project</span><span class="zh-only">畢業設計</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="bachelor-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Bachelor)</span><span class="zh-only">大學作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="master-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Master)</span><span class="zh-only">研究所作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="thesis.html" class="menu-sub-link"><span class="en-only">Master's Thesis · CoEvo</span><span class="zh-only">碩士論文 · CoEvo</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                    </nav>
+                    <div class="mt-12 pt-8 border-t border-black/6">
+                        <p class="text-[10px] font-mono text-black/20 uppercase tracking-widest font-bold"><span class="en-only">Based in Taiwan · Architectural Innovation Designer</span><span class="zh-only">台灣 · 建築創新設計師</span></p>
+                        <a href="mailto:zx26244623@gmail.com" class="mt-3 block text-xs font-mono text-black/35 hover:text-black transition-colors cursor-none">zx26244623@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>  
+
+    <!-- Scripts Data for Hist/Map random popup -->
+    <script>
+        const fullHistData =[
+            {src: 'https://static.wixstatic.com/media/1a29c1_f437d8a382ff45deb527fce09d149efc~mv2.jpg', cap: '過去的伯公攏及網型區域'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_4825e3fe1caa4f788c3e041c95e99459~mv2.jpg', cap: '水下50m的伯公攏伯公祀'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_5a320ac3520e4f8ea60a344b7b835e2f~mv2.jpg', cap: '網型淹沒區遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_95e5b3b21d38460589e117158dd4f973~mv2.jpg', cap: '舊台三線民宅遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_a273c00ca0944d6ca5597e17035885fa~mv2.jpg', cap: '永通橋附近枇杷園遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_d834d8c16673471fbb451ad399b7b67e~mv2.jpg', cap: '伯公攏遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_ab36e793a2a84ac19873df8ca7a3699d~mv2.jpg', cap: '網型區域的民宅遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_69ee7502abb042678b5b00e02549e714~mv2.jpg', cap: '伯公攏伯公祀'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_4fc6b7dcc67d4d1982f68a8e9b34622d~mv2.jpg', cap: '過去開墾的遺址－斬缺'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_bb4e8fdc15f14c098f36fb01c57da132~mv2.jpg', cap: '新開十鄰西安伯公'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_e6a9d1c757c648b2bbc2bea53ac45533~mv2.jpg', cap: '新開十鄰西安伯公（另一視角）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_10db97f1b8b644a2ac7105cc7a071ac2~mv2.jpg', cap: '過去的行易橋'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_89798dd401a3404c9f8e8034b61d8e5e~mv2.jpg', cap: '舊台三線民宅遺址（近景）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_12bf9eb21b5943d78951217f4defb2e0~mv2.jpg', cap: '現今的行易橋'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_7196aef22679432fb90e32650c101b27~mv2.jpg', cap: '現今的行易橋（不同角度）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_a93cf11ed387470b94fa84a39862487d~mv2.png', cap: '將軍廟遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_1db42022be61478183618753184b2856~mv2.jpg', cap: '新開村搬遷前'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_1ad7e9aa16134a8181a0509bb6cbf24e~mv2.jpg', cap: '新開村搬遷前（另一視角）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_a8a9a762e4184e37a91ef2249bb40886~mv2.jpg', cap: '過去的行易橋（另一時期）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_d4dca0d1cb9f4b969434a5659c1826d0~mv2.jpg', cap: '現今的行易橋（對比畫面）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_dfabc9ed62c7420785ec3f27bb5f6e4c~mv2.jpg', cap: '將軍廟遺址（近景）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_a0d6bd5e80e34881a405ea6c4ce62186~mv2.jpg', cap: '將軍廟鄰近民宅遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_e50fc132f69b4ae7b306fcdff533f318~mv2.jpg', cap: '網形聚落遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_842313f2facb4befa2ffa0e26c2da243~mv2.jpg', cap: '網型淹沒區民宅遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_63feab977ea44ebbb90453e18d361a34~mv2.jpg', cap: '舊台三線民宅遺址（遠景）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_ff4f02d8486a490188b5d9bd8f83bef9~mv2.jpg', cap: '將軍廟遺址（俯視）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_6ddf4b09757e4c949a4759907c1c5b13~mv2.png', cap: '網形淹沒區遺址（示意）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_59a82401b03b4ca4abf38b5d26da4ee4~mv2.jpg', cap: '將軍廟遺址前舊台三線'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_89643cc9147c4350ad3b9311a9164a9c~mv2.jpg', cap: '舊台三線遺址與壢西坪日軍飛機場遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_b81a4b6b32864a359b9d095dce31554a~mv2.jpg', cap: '淹沒區域－過去的村落永通橋及舊台三線段'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_c6a4b333e0e04ee8a7e624eb625bc346~mv2.jpg', cap: '淹沒區域－過去的村落伯公攏區域'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_6c3d9fd35eab45a7b6e4fdefa4ddaa5c~mv2.jpg', cap: '淹沒區域－過去的村落將軍廟附近'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_bc9bd23a347f40c987999f364111a84a~mv2.png', cap: '鯉魚潭水庫低水位時'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_bc0de8f90f5a4082a626033a029c13a5~mv2.png', cap: '鯉魚潭水庫滿水位時'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_ace4652e0daa4c1bb9f73669261ac3c7~mv2.jpeg', cap: '將軍廟遺址內部'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_cd15aa4009cb4a4aa3de4eeacd35c783~mv2.jpg', cap: '公館坪遺址探訪'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_1a2e7552d0af4af9bc15bb17a536676b~mv2.png', cap: '公館坪開墾遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_c4d97f5acf4a4882a6569dfea2a32553~mv2.jpeg', cap: '公館坪開墾遺址（近景）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_6e44819e86184cac99621bc47d3c3763~mv2.png', cap: '舊台三縣遺址'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_0716190235f341afa9959005d88629a7~mv2.jpeg', cap: '將軍廟鄰近民宅遺址（角度一）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_55d319348a4344beb001e5c82fb8489f~mv2.jpeg', cap: '將軍廟鄰近民宅遺址（角度二）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_0b7f73bc3da94cb4ad1bc4fe07536bda~mv2.jpg', cap: '將軍廟鄰近民宅遺址（角度三）'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_8a1c68356b4e4313a238c3228098ad16~mv2.jpeg', cap: '土地界樁'},
+            {src: 'https://static.wixstatic.com/media/1a29c1_d1daa231d56048cbb34101dbda6bf977~mv2.jpeg', cap: '將軍廟鄰近民宅梯田遺址'}
+        ];
+
+        // Populate the historical gallery dynamically
+        const histContainer = document.getElementById('hist-track');
+        if(histContainer) {
+            fullHistData.forEach(d => {
+                histContainer.innerHTML += `
+                    <div class="flex-shrink-0 w-[280px] md:w-[360px] snap-center cursor-none hist-item group">
+                        <div class="overflow-hidden rounded-2xl aspect-[4/3] relative border border-black/5 bg-[#e8e8e8]">
+                            <img src="${d.src}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" onclick="openLightbox(this.src)" loading="lazy">
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center p-4 pointer-events-none">
+                                <iconify-icon icon="ph:magnifying-glass-plus-bold" class="text-white text-3xl"></iconify-icon>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-[11px] text-center text-black/60 font-serif tracking-wide">${d.cap}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // Random Historical Photo Function for Sonar Markers
+        window.openRandomHistoricalPhoto = function(event) {
+            event.stopPropagation(); // Stop click from hitting the background map
+            if (fullHistData && fullHistData.length > 0) {
+                const randIndex = Math.floor(Math.random() * fullHistData.length);
+                openLightbox(fullHistData[randIndex].src);
+            }
+        };
+    </script>
+
+    <script>
+    // --- Utils: Word/Char Splitter for Animation ---
+    function splitTextForAnimation(selector) {
+        document.querySelectorAll(selector).forEach(el => {
+            const text = el.textContent.trim();
+            el.innerHTML = text.split('').map(char => {
+                if (char === ' ' || char === '\n') return char;
+                return `<span class="char-wrap"><span class="char-anim">${char}</span></span>`;
+            }).join('');
+        });
+    }
+
+        document.addEventListener("DOMContentLoaded", () => {
+        // Menu Overlay Logic
+        const menuBtn = document.getElementById('menu-btn');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const menuClose = document.getElementById('menu-close');
+        if(menuBtn) menuBtn.addEventListener('click', e => { e.stopPropagation(); menuOverlay.classList.add('open'); document.body.style.overflow='hidden'; });
+        if(menuClose) menuClose.addEventListener('click', () => { menuOverlay.classList.remove('open'); document.body.style.overflow=''; });
+
+        // Language Toggle
+        const langToggle = document.getElementById('lang-toggle');
+        let currentLang = localStorage.getItem('pref-lang') || 'zh';
+        function applyLang() {
+            document.body.classList.remove('lang-en', 'lang-zh');
+            document.body.classList.add('lang-' + currentLang);
+            if (langToggle) {
+                const textSpan = langToggle.querySelector('.magnetic-text');
+                if (textSpan) textSpan.innerText = currentLang === 'en' ? '中' : 'EN';
+            }
+            
+            // 刷新 ScrollTrigger 以確保位置計算正確
+            ScrollTrigger.refresh();
+            
+            // 處理切換語言後文字消失的問題
+            gsap.utils.toArray('.narrative-split').forEach(textBlock => {
+                const chars = textBlock.querySelectorAll('.char-anim');
+                if (window.getComputedStyle(textBlock).display !== 'none') {
+                    // 如果該段落已經在視窗內或上方，強制重新跑一遍動畫或直接顯示
+                    const rect = textBlock.getBoundingClientRect();
+                    if (rect.top < window.innerHeight) {
+                        gsap.fromTo(chars, 
+                            { y: '110%', opacity: 0 },
+                            { y: '0%', opacity: 1, duration: 0.8, stagger: 0.008, ease: "power2.out", overwrite: true }
+                        );
+                    } else {
+                        // 如果不在視窗內，重置狀態讓 ScrollTrigger 再次觸發
+                        gsap.set(chars, { y: '110%', opacity: 0 });
+                    }
+                }
+            });
+        }
+        applyLang();
+        if (langToggle) {
+            langToggle.addEventListener('click', () => {
+                currentLang = currentLang === 'en' ? 'zh' : 'en';
+                localStorage.setItem('pref-lang', currentLang);
+                applyLang();
+            });
+        }
+
+        gsap.registerPlugin(ScrollTrigger);
+        splitTextForAnimation('.narrative-split');
+
+        // Custom Cursor
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', e => gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.15, ease: "power2.out" }));
+        
+        document.querySelectorAll('a, button, .magnetic, .sonar-marker, .hist-item, img, .contributor-item').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // Magnetic Buttons
+        document.querySelectorAll('.magnetic').forEach(btn => {
+            btn.addEventListener('mousemove', e => {
+                const r = btn.getBoundingClientRect(), x = e.clientX - r.left - r.width/2, y = e.clientY - r.top - r.height/2;
+                gsap.to(btn, { x: x*0.4, y: y*0.4, duration: 0.3, ease: "power2.out" });
+                const t = btn.querySelector('.magnetic-text'); if(t) gsap.to(t, { x: x*0.2, y: y*0.2, duration: 0.3, ease: "power2.out" });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1,0.3)" });
+                const t = btn.querySelector('.magnetic-text'); if(t) gsap.to(t, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1,0.3)" });
+            });
+        });
+
+        // Hero Reveal
+        gsap.to('.clip-text', { y: '0%', opacity: 1, duration: 1.2, stagger: 0.1, ease: "power4.out", delay: 0.5 });
+        gsap.to('.hero-wipe', { scaleY: 0, transformOrigin: 'bottom', duration: 1.5, ease: "power3.inOut" });
+
+        // Parallax BG
+        gsap.utils.toArray('.parallax-bg').forEach(bg => {
+            gsap.to(bg, {
+                yPercent: 15, ease: "none",
+                scrollTrigger: { trigger: bg.parentElement, start: "top bottom", end: "bottom top", scrub: true }
+            });
+        });
+
+        // Liquid Wipe Sections
+        gsap.utils.toArray('.story-section').forEach(section => {
+            const wipe = section.querySelector('.section-wipe');
+            const img = section.querySelector('img.parallax-img');
+            gsap.to(wipe, {
+                scaleY: 0, transformOrigin: 'top', ease: "power3.inOut",
+                scrollTrigger: { trigger: section, start: "top 70%", end: "top 20%", scrub: 1 }
+            });
+            gsap.from(img, {
+                scale: 1.15, filter: 'blur(10px)', ease: "power2.out",
+                scrollTrigger: { trigger: section, start: "top 70%", end: "top 20%", scrub: 1 }
+            });
+        });
+
+        // Reveal Cards & Word by Word
+        gsap.utils.toArray('.reveal-card').forEach(card => {
+            gsap.from(card, {
+                y: 50, opacity: 0, duration: 1, ease: "power3.out",
+                scrollTrigger: { trigger: card, start: "top 85%" }
+            });
+            const chars = card.querySelectorAll('.char-anim');
+            if(chars.length) {
+                gsap.to(chars, {
+                    y: '0%', opacity: 1, duration: 0.8, stagger: 0.015, ease: "back.out(1.5)",
+                    scrollTrigger: { trigger: card, start: "top 85%" }
+                });
+            }
+        });
+
+        gsap.utils.toArray('.narrative-split').forEach(textBlock => {
+            if(!textBlock.closest('.reveal-card')) {
+                gsap.to(textBlock.querySelectorAll('.char-anim'), {
+                    y: '0%', opacity: 1, duration: 0.6, stagger: 0.01, ease: "power2.out",
+                    scrollTrigger: { trigger: textBlock, start: "top 90%" }
+                });
+            }
+        });
+
+        // LOST Count-Up Animation
+        gsap.utils.toArray('.count-up').forEach(counter => {
+            const target = +counter.getAttribute('data-target');
+            ScrollTrigger.create({
+                trigger: counter,
+                start: "top 90%",
+                once: true,
+                onEnter: () => {
+                    gsap.to(counter, {
+                        innerHTML: target,
+                        duration: 2.5,
+                        ease: "power3.out",
+                        snap: { innerHTML: 1 },
+                        onUpdate: function() { counter.innerHTML = Math.round(this.targets()[0].innerHTML); }
+                    });
+                }
+            });
+        });
+
+        // Horizontal Gallery Scrolling Setup
+        const setupGallery = (trackId, prevBtnId, nextBtnId, scrollAmt = 500) => {
+            const track = document.getElementById(trackId);
+            const prev = document.getElementById(prevBtnId);
+            const next = document.getElementById(nextBtnId);
+            if(track && prev && next) {
+                prev.addEventListener('click', () => track.scrollBy({left: -scrollAmt, behavior: 'smooth'}));
+                next.addEventListener('click', () => track.scrollBy({left: scrollAmt, behavior: 'smooth'}));
+            }
+        };
+        setupGallery('hist-track', 'hist-prev', 'hist-next');
+        setupGallery('flow-track', 'flow-prev', 'flow-next');
+        setupGallery('contrib-track', 'contrib-prev', 'contrib-next', 300);
+
+        // Lightbox logic
+        window.openLightbox = function(src) {
+            const lb = document.getElementById('lightbox');
+            document.getElementById('lightbox-img').src = src;
+            lb.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        document.getElementById('lightbox-close').addEventListener('click', () => {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+        });
+        document.getElementById('lightbox').addEventListener('click', (e) => {
+            if(e.target === document.getElementById('lightbox')) {
+                document.getElementById('lightbox').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+        document.addEventListener('keydown', e => {
+            if(e.key === 'Escape') {
+                document.getElementById('lightbox').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Video Play
+        const videoWrap = document.querySelector('.aspect-video');
+        const ytIframe = document.getElementById('yt-video');
+        const cover = document.getElementById('video-cover');
+        const playBtn = document.getElementById('play-btn-wrap');
+        if(videoWrap) {
+            videoWrap.addEventListener('click', () => {
+                cover.style.opacity = '0';
+                playBtn.style.opacity = '0';
+                ytIframe.style.opacity = '1';
+                ytIframe.style.pointerEvents = 'auto';
+                ytIframe.src += "&autoplay=1";
+            }, {once: true});
+        }
+
+        initWebGL();
+    });
+
+    // Light Fluid WebGL Background
+    function initWebGL() {
+        const canvas = document.getElementById('webgl-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const scene = new THREE.Scene(), camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+        const uniforms = { u_time: { value: 0 }, u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) } };
+        const mat = new THREE.ShaderMaterial({
+            uniforms, transparent: true,
+            vertexShader: `void main(){gl_Position=vec4(position,1.);}`,
+            fragmentShader: `
+            uniform float u_time; uniform vec2 u_resolution;
+            vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+            vec2 mod289(vec2 x){return x-floor(x*(1.0/289.0))*289.0;}
+            vec3 permute(vec3 x){return mod289(((x*34.0)+1.0)*x);}
+            float snoise(vec2 v){
+                const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+                vec2 i=floor(v+dot(v,C.yy)), x0=v-i+dot(i,C.xx), i1;
+                i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+                vec4 x12=x0.xyxy+C.xxzz; x12.xy-=i1;
+                i=mod289(i);
+                vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+                vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+                m=m*m; m=m*m;
+                vec3 x=2.0*fract(p*C.www)-1.0, h=abs(x)-0.5, ox=floor(x+0.5), a0=x-ox;
+                m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+                vec3 g; g.x=a0.x*x0.x+h.x*x0.y; g.yz=a0.yz*x12.xz+h.yz*x12.yw;
+                return 130.0*dot(m,g);
+            }
+            void main(){
+                vec2 st = gl_FragCoord.xy/u_resolution.xy;
+                st.x *= u_resolution.x/u_resolution.y;
+                float n1 = snoise(vec2(st.x*1.5 + u_time*0.02, st.y*1.5 - u_time*0.02));
+                float n2 = snoise(vec2(st.x*3.0 - u_time*0.03, st.y*3.0 + u_time*0.015));
+                float mixNoise = (n1 + n2*0.5)*0.5 + 0.5;
+                vec3 c1 = vec3(0.98, 0.98, 0.99);
+                vec3 c2 = vec3(0.94, 0.95, 0.97);
+                vec3 c3 = vec3(0.90, 0.92, 0.95);
+                vec3 color = mix(c1, c2, mixNoise);
+                color = mix(color, c3, smoothstep(0.6, 1.0, mixNoise));
+                gl_FragColor = vec4(color, 1.0);
+            }`
+        });
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), mat));
+        window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight); });
+        (function animate(t){ uniforms.u_time.value = t*0.001; renderer.render(scene, camera); requestAnimationFrame(animate); })(0);
+    }
+    </script>
+</body>
+</html>

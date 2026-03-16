@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FU. | Portfolio + Resume 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #F8F9FA; color: #111111; font-family: 'Manrope', sans-serif; overflow-x: hidden; cursor: none; }
+        ::selection { background: rgba(17,17,17,0.9); color: #fff; }
+        #custom-cursor {
+            position: fixed; top: 0; left: 0; width: 12px; height: 12px;
+            background: #fff; border-radius: 50%; pointer-events: none; z-index: 10002;
+            transform: translate(-50%,-50%);
+            transition: width .3s cubic-bezier(.16,1,.3,1), height .3s cubic-bezier(.16,1,.3,1), background .3s, border .3s;
+            mix-blend-mode: difference; display: flex; align-items: center; justify-content: center;
+        }
+        #custom-cursor.hover { width: 60px; height: 60px; background: rgba(255,255,255,.1); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.5); }
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9998;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E');
+            opacity: 0.03; mix-blend-mode: multiply;
+        }
+        .glass-panel { background: rgba(255,255,255,.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(0,0,0,.04); box-shadow: 0 40px 80px rgba(0,0,0,.03), inset 0 0 0 1px rgba(255,255,255,.5); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F8F9FA; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 10px; }
+        
+        /* 原有的全域背景 Canvas */
+        #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: .8; }
+        
+        .word-wrapper { display: inline-block; overflow: hidden; vertical-align: top; }
+        .word-inner { display: inline-block; white-space: pre; }
+        .nav-link-active { color: #111 !important; }
+        .chapter-label { font-family: 'Syncopate', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .3em; color: rgba(0,0,0,.3); text-transform: uppercase; }
+        .marquee-content { display: inline-block; }
+        
+        /* Menu Overlay */
+        #menu-overlay { position:fixed; inset:0; z-index:10000; background:rgba(248,249,250,.97); backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); opacity:0; pointer-events:none; transition:opacity .4s ease; overflow-y:auto; }
+        #menu-overlay.open { opacity:1; pointer-events:auto; }
+        .menu-nav-link { display:block; font-family:'Syncopate',sans-serif; font-size:clamp(2.2rem,5vw,4.5rem); font-weight:700; color:rgba(17,17,17,.11); letter-spacing:-.02em; padding:.4rem 0; border-bottom:1px solid rgba(0,0,0,.05); transition:color .3s ease,padding-left .4s cubic-bezier(.16,1,.3,1); cursor:none; line-height:1.15; }
+        .menu-nav-link:hover { color:#111; padding-left:.75rem; }
+        .menu-sub-link { display:flex; align-items:center; gap:.5rem; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:rgba(17,17,17,.32); transition:color .25s; cursor:none; padding:.55rem 0; border-bottom:1px solid rgba(0,0,0,.04); }
+        .menu-sub-link:hover { color:#111; }
+        
+        /* === 嚴格的中英文切換邏輯 === */
+        body.lang-en .zh-only { display: none !important; }
+        body.lang-zh .en-only { display: none !important; }
+        .scramble-hover { cursor: none; }
+    </style>
+</head>
+<body class="antialiased lang-zh"> <!-- 預設套用中文 -->
+    <!-- 原本的全域漂浮背景 -->
+    <canvas id="webgl-canvas"></canvas>
+    <div class="noise-overlay"></div>
+    <div id="custom-cursor"></div>
+    
+    <div class="fixed inset-0 pointer-events-none z-0 flex justify-between px-6 md:px-20 max-w-[1920px] mx-auto w-full opacity-30">
+        <div class="w-px h-full bg-black/5"></div><div class="w-px h-full bg-black/5"></div>
+        <div class="w-px h-full bg-black/5 hidden md:block"></div><div class="w-px h-full bg-black/5 hidden md:block"></div>
+        <div class="w-px h-full bg-black/5"></div>
+    </div>
+    <div class="fixed left-6 top-1/2 -translate-y-1/2 flex-col gap-4 text-[10px] font-mono text-black/30 z-40 hidden lg:flex">
+        <span>01</span><div class="w-px h-16 bg-black/10 mx-auto"></div><span>05</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-6 backdrop-blur-xl bg-white/40 border-b border-black/5 transition-all duration-300">
+        <a href="index.html" class="text-2xl font-['Syncopate'] font-bold tracking-tighter cursor-pointer magnetic text-black">FU.</a>
+        <div class="flex items-center gap-6 lg:gap-10">
+            <ul class="gap-10 text-xs uppercase tracking-[0.2em] hidden md:flex font-semibold text-black/60 items-center">
+                <li><a href="index.html" class="nav-link-active transition-colors cursor-none"><span class="en-only">Home</span><span class="zh-only">首頁</span></a></li>
+                <li><a href="projects.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a></li>
+                <li><a href="resume.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Resume</span><span class="zh-only">個人履歷</span></a></li>
+                <li><a href="contact.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a></li>
+            </ul>
+            <div class="flex items-center gap-3">
+                <button id="lang-toggle" class="magnetic w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-[10px] font-bold text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text">EN</span>
+                </button>
+                <button id="menu-btn" class="magnetic border border-black/20 rounded-full px-6 py-2 text-xs uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text block"><span class="en-only">Menu</span><span class="zh-only">選單</span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="relative w-full h-screen flex items-center justify-center overflow-hidden" id="hero-section">
+        <!-- 替換為 Dither 互動網點 Canvas -->
+        <div class="absolute inset-0 z-0 overflow-hidden w-full h-full">
+            <canvas id="hero-dither-canvas" class="w-full h-full"></canvas>
+        </div>
+        <!-- 保留輕微的漸層讓字體清晰 -->
+        <div class="absolute inset-0 bg-gradient-to-t from-[#F8F9FA] via-white/40 to-white/10 z-[1] pointer-events-none"></div>
+        
+        <div class="z-10 text-center flex flex-col items-center mt-20 pointer-events-none">
+            <p class="text-xs md:text-sm uppercase tracking-[0.4em] mb-6 text-black/50 font-bold split-text en-only">Portfolio + Resume 2026</p>
+            <p class="text-xs md:text-sm uppercase tracking-[0.4em] mb-6 text-black/50 font-bold split-text zh-only">作品集 + 個人履歷 2026</p>
+            <div class="relative">
+                <h1 class="text-6xl md:text-[8rem] lg:text-[11rem] font-['Syncopate'] font-bold leading-none mb-6 title-reveal text-[#111] relative z-10 tracking-tighter">VISIONARY</h1>
+                <h1 class="text-6xl md:text-[8rem] lg:text-[11rem] font-['Syncopate'] font-bold leading-none mb-6 absolute top-1/2 left-[51%] -translate-x-1/2 -translate-y-1/2 text-transparent[-webkit-text-stroke:1px_rgba(0,0,0,0.15)] blur-[1px] z-0 tracking-tighter mix-blend-multiply">VISIONARY</h1>
+            </div>
+            
+            <!-- 加上 scramble-hover 觸發亂碼特效 (需開啟 pointer-events-auto) -->
+            <div class="pointer-events-auto relative">
+                <p class="max-w-4xl text-md md:text-xl text-black/60 font-medium split-text mt-6 px-4 zh-only scramble-hover">建築創新設計師，致力於跨越空間邏輯與數位工藝之間的鴻溝。</p>
+                <p class="max-w-4xl text-md md:text-xl text-black/60 font-medium split-text mt-6 px-4 en-only scramble-hover">Architectural Innovation Designer bridging the gap between spatial logic and digital craft.</p>
+            </div>
+                
+            <div class="flex gap-6 mt-12 pointer-events-auto">
+                <a href="projects.html" class="magnetic bg-[#111] text-white px-8 py-4 rounded-full font-bold tracking-[0.15em] text-xs uppercase flex items-center gap-3 hover:bg-[#333] transition-colors shadow-2xl shadow-black/20">
+                    <span class="magnetic-text"><span class="en-only">View Works</span><span class="zh-only">專案作品</span></span>
+                    <iconify-icon icon="ph:arrow-right-bold" class="text-sm magnetic-text"></iconify-icon>
+                </a>
+                <a href="resume.html" class="magnetic border border-black/20 px-8 py-4 rounded-full font-bold tracking-[0.15em] text-xs uppercase flex items-center gap-3 hover:bg-black hover:text-white transition-colors">
+                    <span class="magnetic-text"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Nav Cards (完整保留) -->
+    <section class="py-20 px-6 md:px-12 relative z-10 w-full max-w-[1920px] mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="#about" class="glass-panel p-10 rounded-[2rem] flex flex-col justify-between h-52 group hover:shadow-xl transition-all duration-500 cursor-none magnetic reveal-card">
+                <div class="text-[10px] font-mono text-black/25 font-bold tracking-widest uppercase">01 // <span class="en-only">About</span><span class="zh-only">關於</span></div>
+                <div><h3 class="text-2xl font-['Syncopate'] font-bold text-[#111] mb-2 magnetic-text"><span class="en-only">About Me</span><span class="zh-only">關於我</span></h3><p class="text-black/40 text-sm font-medium"><span class="en-only">Who I am & what I do</span><span class="zh-only">我是誰 & 我在做什麼</span></p></div>
+                <iconify-icon icon="ph:arrow-up-right-bold" class="text-black/20 group-hover:text-black transition-colors text-2xl self-end magnetic-text"></iconify-icon>
+            </a>
+            <a href="projects.html" class="glass-panel p-10 rounded-[2rem] flex flex-col justify-between h-52 group hover:shadow-xl transition-all duration-500 cursor-none magnetic reveal-card">
+                <div class="text-[10px] font-mono text-black/25 font-bold tracking-widest uppercase">02 // <span class="en-only">Works</span><span class="zh-only">專案</span></div>
+                <div><h3 class="text-2xl font-['Syncopate'] font-bold text-[#111] mb-2 magnetic-text"><span class="en-only">Projects</span><span class="zh-only">專案作品集</span></h3><p class="text-black/40 text-sm font-medium"><span class="en-only">Selected portfolio works</span><span class="zh-only">精選作品收錄</span></p></div>
+                <iconify-icon icon="ph:arrow-up-right-bold" class="text-black/20 group-hover:text-black transition-colors text-2xl self-end magnetic-text"></iconify-icon>
+            </a>
+            <a href="resume.html" class="glass-panel p-10 rounded-[2rem] flex flex-col justify-between h-52 group hover:shadow-xl transition-all duration-500 cursor-none magnetic reveal-card">
+                <div class="text-[10px] font-mono text-black/25 font-bold tracking-widest uppercase">03 // CV</div>
+                <div><h3 class="text-2xl font-['Syncopate'] font-bold text-[#111] mb-2 magnetic-text"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></h3><p class="text-black/40 text-sm font-medium"><span class="en-only">Experience & Skills</span><span class="zh-only">經歷與技能領域</span></p></div>
+                <iconify-icon icon="ph:arrow-up-right-bold" class="text-black/20 group-hover:text-black transition-colors text-2xl self-end magnetic-text"></iconify-icon>
+            </a>
+        </div>
+    </section>
+
+    <!-- About Section (完整保留) -->
+    <section id="about" class="py-20 px-6 md:px-12 relative z-10 w-full max-w-[1920px] mx-auto">
+        <div class="mb-16 border-b border-black/10 pb-8 flex justify-between items-end">
+            <div>
+                <div class="flex items-center gap-2 text-xs text-black/30 font-mono mb-4 font-bold"><iconify-icon icon="ph:asterisk"></iconify-icon> 01 // <span class="en-only">ABOUT</span><span class="zh-only">關於我</span></div>
+                <h2 class="text-4xl md:text-6xl font-['Syncopate'] font-bold leading-none text-[#111] tracking-tighter about-title"><span class="en-only">HELLO, I AM FU.</span><span class="zh-only">你好，我是傅。</span></h2>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-16 lg:gap-24 items-center">
+            <div class="glass-panel p-10 md:p-14 rounded-[2.5rem] overflow-hidden about-reveal flex flex-col justify-center">
+                <div class="space-y-6 mb-8 pointer-events-auto">
+                    <!-- 加上 scramble-hover -->
+                    <div class="zh-only space-y-6">
+                        <p class="text-lg md:text-xl text-black/60 leading-relaxed font-medium split-text scramble-hover">我是傅乙晟，畢業於建築系，隨後在建築研究所數位組深入研究人工智慧與建築設計的結合。</p>
+                        <p class="text-lg md:text-xl text-black/60 leading-relaxed font-medium split-text scramble-hover">秉持著對建築的初衷與熱情，我不斷嘗試以更高效率、更多元突破的方式來探索設計的可能性。我的作品不僅涵蓋傳統建築設計，還延伸到跨領域的創新實踐，特別是將 AI 技術應用於建築流程與設計思維之中。</p>
+                        <p class="text-lg md:text-xl text-black/60 leading-relaxed font-medium split-text scramble-hover">這些嘗試不只是技術上的整合，更是對未來建築創作模式與空間體驗的一種探索與挑戰。如果你對「AI×建築設計」的可能性感興趣，歡迎與我聯繫，一起探討更多跨域的創意合作。</p>
+                    </div>
+                    <div class="en-only space-y-6">
+                        <p class="text-lg md:text-xl text-black/60 leading-relaxed font-medium split-text scramble-hover">My name is Fu Yi-Cheng. I graduated from the Department of Architecture and subsequently pursued a career in the Digital Design Group at the Institute of Architecture, focusing on the integration of artificial intelligence and architectural design.</p>
+                        <p class="text-lg md:text-xl text-black/60 leading-relaxed font-medium split-text scramble-hover">Maintaining my original passion for architecture, I continually strive to explore the possibilities of design through more efficient, diverse, and groundbreaking methods. My work encompasses not only traditional architectural design but also crosses over into innovative cross-disciplinary practices, particularly the application of AI technology to architectural processes and design thinking.</p>
+                        <p class="text-lg md:text-xl text-black/60 leading-relaxed font-medium split-text scramble-hover">These attempts are not merely technological integrations; they are explorations and challenges into future architectural creative models and innovative spatial experiences. If you are interested in the possibilities of "AI × Architectural Design" or would like to explore more cross-disciplinary creative collaborations, please feel free to contact me.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 pt-8 border-t border-black/8">
+                    <div class="text-center">
+                        <div class="text-3xl font-['Syncopate'] font-bold text-[#111]">5+</div>
+                        <p class="text-[10px] uppercase tracking-widest text-black/40 font-bold font-mono mt-1"><span class="en-only">Years</span><span class="zh-only">年資</span></p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-['Syncopate'] font-bold text-[#111]">10+</div>
+                        <p class="text-[10px] uppercase tracking-widest text-black/40 font-bold font-mono mt-1"><span class="en-only">Awards</span><span class="zh-only">獲獎</span></p>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-3xl font-['Syncopate'] font-bold text-[#111]">20+</div>
+                        <p class="text-[10px] uppercase tracking-widest text-black/40 font-bold font-mono mt-1"><span class="en-only">Projects</span><span class="zh-only">專案</span></p>
+                    </div>
+                </div>
+                <a href="contact.html" class="magnetic mt-10 bg-[#111] text-white px-8 py-4 rounded-full font-bold tracking-[0.15em] text-xs uppercase flex items-center gap-3 w-fit hover:bg-[#333] transition-colors">
+                    <span class="magnetic-text"><span class="en-only">Get in touch</span><span class="zh-only">聯絡我</span></span>
+                    <iconify-icon icon="ph:arrow-right-bold" class="text-sm magnetic-text"></iconify-icon>
+                </a>
+            </div>
+            <div class="h-[60vh] w-[60vh] rounded-full overflow-hidden relative group shadow-[0_30px_60px_rgba(0,0,0,0.08)] about-reveal aspect-square mx-auto lg:ml-0 lg:mr-auto border-8 border-white/50">
+                <img src="https://static.wixstatic.com/media/1a29c1_4e347d71e1164a8ebfdc080bc714d75e~mv2.jpg/v1/fill/w_766,h_766,al_c,q_85,enc_avif,quality_auto/%E7%85%A7%E7%89%87_edited.jpg" class="w-full h-full object-cover parallax-img scale-110 grayscale-[20%]" alt="Portrait">
+                <div class="absolute inset-0 bg-white mix-blend-overlay opacity-0 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Menu Overlay (完整保留) -->
+    <div id="menu-overlay">
+        <div class="min-h-screen flex flex-col px-8 md:px-16 py-10">
+            <div class="flex justify-between items-center">
+                <a href="index.html" class="text-2xl font-['Syncopate'] font-bold text-black tracking-tighter cursor-none flex items-baseline gap-3">
+                    <span>FU.</span>
+                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-black/40">
+                        <span class="en-only">Resume &amp; Portfolio</span>
+                        <span class="zh-only">個人履歷 &amp; 作品集</span>
+                    </span>
+                </a>
+                <button id="menu-close" class="w-11 h-11 rounded-full border border-black/15 flex items-center justify-center text-black/40 hover:text-black hover:border-black transition-all cursor-none">
+                    <iconify-icon icon="ph:x-bold" class="text-base"></iconify-icon>
+                </button>
+            </div>
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 content-center max-w-5xl mt-16 mx-auto w-full">
+                <div>
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Pages</span><span class="zh-only">頁面</span></div>
+                    <nav>
+                        <a href="index.html" class="menu-nav-link"><span class="en-only">Home</span><span class="zh-only">首頁</span></a>
+                        <a href="projects.html" class="menu-nav-link"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a>
+                        <a href="resume.html" class="menu-nav-link"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></a>
+                        <a href="contact.html" class="menu-nav-link"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a>
+                    </nav>
+                </div>
+                <div class="lg:pt-16">
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Project Details</span><span class="zh-only">專案詳情</span></div>
+                    <nav>
+                        <a href="graduation-project.html" class="menu-sub-link"><span class="en-only">Graduation Project</span><span class="zh-only">畢業設計</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="bachelor-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Bachelor)</span><span class="zh-only">大學作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="master-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Master)</span><span class="zh-only">研究所作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="thesis.html" class="menu-sub-link"><span class="en-only">Master's Thesis</span><span class="zh-only">碩士論文</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                    </nav>
+                    <div class="mt-12 pt-8 border-t border-black/6">
+                        <p class="text-[10px] font-mono text-black/20 uppercase tracking-widest font-bold"><span class="en-only">Based in Taiwan · Architectural Innovation Designer</span><span class="zh-only">台灣 · 建築創新設計師</span></p>
+                        <a href="mailto:zx26244623@gmail.com" class="mt-3 block text-xs font-mono text-black/35 hover:text-black transition-colors cursor-none">zx26244623@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer (完整保留) -->
+    <footer class="relative z-10 w-full overflow-hidden bg-white/80 backdrop-blur-2xl border-t border-black/5 pt-20 pb-12 mt-10 shadow-[0_-20px_40px_rgba(0,0,0,0.02)]">
+        <div class="marquee-container flex whitespace-nowrap overflow-hidden font-['Syncopate'] font-bold text-[8rem] md:text-[12rem] leading-none mb-20 select-none opacity-60">
+            <div class="marquee-content inline-block">
+                <span class="text-transparent[-webkit-text-stroke:2px_rgba(0,0,0,0.1)]">LET'S COLLABORATE — </span>
+                <span class="text-transparent[-webkit-text-stroke:2px_rgba(0,0,0,0.1)]">LET'S COLLABORATE — </span>
+            </div>
+        </div>
+        <div class="max-w-[1920px] mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-3 gap-16 text-black/50 font-medium">
+            <div>
+                <h4 class="text-[#111] text-2xl font-['Syncopate'] font-bold mb-6">FU.</h4>
+                <p class="uppercase tracking-widest text-xs leading-loose font-bold">
+                    <span class="en-only">Architectural Innovation<br>Designer<br>Based in Taiwan</span>
+                    <span class="zh-only">建築創新設計師<br>位於台灣</span>
+                </p>
+            </div>
+            <div>
+                <h4 class="text-[#111] text-sm uppercase tracking-widest font-bold mb-6 font-mono">
+                    <span class="en-only">Socials</span><span class="zh-only">社群媒體</span>
+                </h4>
+                <ul class="space-y-4 text-sm tracking-widest uppercase font-bold">
+                    <li><a href="https://www.instagram.com/fu.aqian?igsh=ZHl4NW9zZmI0NzJp" class="hover:text-black transition-colors flex items-center gap-2 w-fit magnetic"><span class="magnetic-text">Instagram</span><iconify-icon icon="ph:arrow-up-right"></iconify-icon></a></li>
+                    <li><a href="https://github.com/QQQIIIAAANNN" class="hover:text-black transition-colors flex items-center gap-2 w-fit magnetic"><span class="magnetic-text">GitHub</span><iconify-icon icon="ph:arrow-up-right"></iconify-icon></a></li>
+                    <li><a href="https://www.linkedin.com/in/yi-cheng-fu-18589b28a/" class="hover:text-black transition-colors flex items-center gap-2 w-fit magnetic"><span class="magnetic-text">LinkedIn</span><iconify-icon icon="ph:arrow-up-right"></iconify-icon></a></li>
+                </ul>
+            </div>
+            <div class="md:text-right flex flex-col justify-between">
+                <div>
+                    <h4 class="text-[#111] text-sm uppercase tracking-widest font-bold mb-6 font-mono md:text-right">
+                        <span class="en-only">Get in touch</span><span class="zh-only">與我聯繫</span>
+                    </h4>
+                    <a href="mailto:zx26244623@gmail.com" class="text-xl sm:text-2xl md:text-3xl text-[#111] font-['Syncopate'] hover:text-black/50 transition-colors font-bold tracking-tighter break-all">zx26244623<br>@gmail.com</a>
+                </div>
+                <p class="mt-12 text-xs font-mono uppercase tracking-widest font-bold">&copy; 2026 FU. <span class="en-only">All Rights Reserved.</span><span class="zh-only">版權所有。</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // --- 1. Split Text (針對中英文字元拆分，並儲存原始字串供 Scramble 使用) ---
+        function splitText(sel) {
+            document.querySelectorAll(sel).forEach(el => {
+                const t = el.textContent.trim(); 
+                el.innerHTML = '';
+                const isChinese = /[\u4e00-\u9fa5]/.test(t);
+                const items = isChinese ? t.split('') : t.split(' ');
+                
+                items.forEach(item => {
+                    if (item === '') return;
+                    const wr = document.createElement('span'); wr.className = 'word-wrapper';
+                    const inn = document.createElement('span'); inn.className = 'word-inner';
+                    
+                    // 將原始字串存入 dataset
+                    const rawText = isChinese ? item : item + ' ';
+                    inn.dataset.orig = rawText;
+                    inn.innerHTML = isChinese ? item : item + '&nbsp;'; 
+                    
+                    wr.appendChild(inn); el.appendChild(wr);
+                });
+            });
+        }
+        splitText('.split-text');
+
+        // --- 2. 游標與磁吸按鈕 ---
+        const cursor = document.getElementById('custom-cursor');
+        document.addEventListener('mousemove', e => gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: .15, ease: "power2.out" }));
+        document.querySelectorAll('a, button, .magnetic, .scramble-hover').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+        document.querySelectorAll('.magnetic').forEach(btn => {
+            btn.addEventListener('mousemove', e => {
+                const r = btn.getBoundingClientRect(), x = e.clientX-r.left-r.width/2, y = e.clientY-r.top-r.height/2;
+                gsap.to(btn, { x: x*.4, y: y*.4, duration: .3, ease: "power2.out" });
+                const t = btn.querySelector('.magnetic-text');
+                if(t) gsap.to(t, { x: x*.2, y: y*.2, duration: .3, ease: "power2.out" });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: .7, ease: "elastic.out(1,.3)" });
+                const t = btn.querySelector('.magnetic-text');
+                if(t) gsap.to(t, { x: 0, y: 0, duration: .7, ease: "elastic.out(1,.3)" });
+            });
+        });
+
+        // --- 3. 語言切換邏輯 (修復重整衝突) ---
+        const langToggle = document.getElementById('lang-toggle');
+        let currentLang = localStorage.getItem('pref-lang') || 'zh'; 
+        
+        function applyLang(isInitialLoad = false) {
+            document.body.classList.remove('lang-en', 'lang-zh');
+            document.body.classList.add('lang-' + currentLang);
+            
+            if(langToggle) {
+                const textSpan = langToggle.querySelector('.magnetic-text');
+                if(textSpan) textSpan.innerText = currentLang === 'en' ? '中' : 'EN';
+            }
+            localStorage.setItem('pref-lang', currentLang);
+
+            // 關鍵修復：如果是初次載入網頁，不要執行這個動畫，讓主時間軸接管，避免動畫互衝導致隱形
+            if (!isInitialLoad) {
+                ScrollTrigger.refresh();
+                document.querySelectorAll('.split-text').forEach(el => {
+                    if (window.getComputedStyle(el).display !== 'none') {
+                        const words = el.querySelectorAll('.word-inner');
+                        gsap.killTweensOf(words);
+                        gsap.fromTo(words, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: "power3.out", stagger: 0.01 });
+                    }
+                });
+            }
+        }
+        applyLang(true); // 初始化執行時傳入 true
+
+        if(langToggle) {
+            langToggle.addEventListener('click', () => {
+                currentLang = currentLang === 'en' ? 'zh' : 'en';
+                applyLang(false); // 手動點擊切換時傳入 false
+            });
+        }
+
+        // --- 4. GSAP 動畫設定 ---
+        const tl = gsap.timeline({ onComplete: () => ScrollTrigger.refresh() });
+        tl.fromTo('#hero-dither-canvas', { opacity: 0, filter: 'blur(15px)' }, { opacity: 0.9, filter: 'blur(0px)', duration: 2, ease: "power3.inOut", delay: 0.2 })
+          .from('.title-reveal', { y: 100, opacity: 0, duration: 1.2, ease: "power4.out", stagger: .1 }, "-=1.5")
+          .from('section.h-screen .word-inner', { yPercent: 100, duration: .8, ease: "power3.out", stagger: .02 }, "-=1.0");
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.reveal-card').forEach((el, i) => {
+            gsap.from(el, { scrollTrigger: { trigger: el, start: "top 90%", once: true }, y: 40, opacity: 0, duration: .8, delay: i*.1, ease: "power3.out" });
+        });
+        gsap.from('.about-title', { scrollTrigger: { trigger: '.about-title', start: "top 90%", once: true }, y: 50, opacity: 0, duration: 1, ease: "power4.out" });
+        gsap.utils.toArray('.about-reveal').forEach((el, i) => {
+            gsap.from(el, { scrollTrigger: { trigger: el, start: "top 90%", once: true }, y: 60, opacity: 0, duration: 1, delay: i*.1, ease: "power3.out" });
+        });
+        gsap.utils.toArray('.split-text').forEach(el => {
+            if (el.closest('section.h-screen')) return;
+            gsap.from(el.querySelectorAll('.word-inner'), { scrollTrigger: { trigger: el, start: "top 92%", once: true }, yPercent: 100, duration: 0.8, ease: "power3.out", stagger: 0.01 });
+        });
+        gsap.utils.toArray('.parallax-img').forEach(img => {
+            gsap.to(img, { scrollTrigger: { trigger: img.parentElement, start: "top bottom", end: "bottom top", scrub: true }, y: 60, ease: "none" });
+        });
+
+        // --- 5. Marquee & Menu ---
+        const mc = document.querySelector('.marquee-content');
+        if(mc){
+            const cl = mc.cloneNode(true);
+            document.querySelector('.marquee-container').appendChild(cl);
+            gsap.to(document.querySelectorAll('.marquee-content'), { xPercent: -100, repeat: -1, duration: 20, ease: "linear" });
+        }
+
+        const menuBtn = document.getElementById('menu-btn'), menuOverlay = document.getElementById('menu-overlay'), menuClose = document.getElementById('menu-close');
+        if(menuBtn) menuBtn.addEventListener('click', e => { e.stopPropagation(); menuOverlay.classList.add('open'); document.body.style.overflow='hidden'; });
+        if(menuClose) menuClose.addEventListener('click', () => { menuOverlay.classList.remove('open'); document.body.style.overflow=''; });
+        document.addEventListener('keydown', e => { if(e.key==='Escape' && menuOverlay.classList.contains('open')) { menuOverlay.classList.remove('open'); document.body.style.overflow=''; } });
+
+        // --- 啟動特效 ---
+        initWebGL();
+        initHeroDither();
+        initScrambleText();
+    });
+
+    // ========== 修正：Scrambled Text (新增中文周邊範圍擴散、波浪觸發特效) ==========
+    function initScrambleText() {
+        const chars = '!<>-_\\/[]{}—=+*^?#_0123456789ABCDEFGHIJKLMNOPXYZ';
+        const paragraphs = document.querySelectorAll('.scramble-hover');
+
+        paragraphs.forEach(p => {
+            p.style.width = '';
+            p.style.marginInline = '';
+
+            // 將所有字元節點轉為陣列，方便抓取相鄰的字
+            const spans = Array.from(p.querySelectorAll('.word-inner'));
+
+            // 將解碼邏輯抽離成獨立函數，方便同時對多個字元呼叫
+            const triggerScramble = (span) => {
+                const originalString = span.dataset.orig;
+                if (!originalString || span.isScrambling) return;
+
+                // 防止高度溢位被隱藏
+                if(span.parentElement.classList.contains('word-wrapper')) {
+                    span.parentElement.style.overflow = 'visible';
+                }
+
+                span.isScrambling = true;
+                
+                const isChinese = /[\u4e00-\u9fa5]/.test(originalString);
+                let iteration = isChinese ? -0.5 : 0;
+                const speed = isChinese ? 0.08 : 0.4; // 稍微再調慢中文解碼速度
+
+                clearInterval(span.scrambleInterval);
+                
+                span.scrambleInterval = setInterval(() => {
+                    span.innerText = originalString
+                        .split("")
+                        .map((char, index) => {
+                            if (index < iteration) return originalString[index];
+                            if (char === " " || char === "&nbsp;") return " ";
+                            return chars[Math.floor(Math.random() * chars.length)];
+                        })
+                        .join("");
+
+                    if (iteration >= originalString.length) {
+                        clearInterval(span.scrambleInterval);
+                        span.innerHTML = originalString.replace(/ /g, '&nbsp;'); 
+                        span.isScrambling = false; 
+                    }
+                    
+                    iteration += speed;
+                }, 30);
+            };
+
+            spans.forEach((span, index) => {
+                // 保留微小的透明 padding 讓滑鼠更容易觸發
+                span.style.padding = '0 0.1em';
+                span.style.margin = '0 -0.1em';
+                span.style.position = 'relative'; 
+
+                span.addEventListener('mouseenter', () => {
+                    const originalString = span.dataset.orig || "";
+                    const isChinese = /[\u4e00-\u9fa5]/.test(originalString);
+                    
+                    // 【關鍵優化：擴展解碼範圍】
+                    // 如果是中文，半徑設為 2 (左右各連帶 2 個字，總共 5 個字一起亂碼)
+                    // 如果是英文 (本身單字就很長)，預設不向外擴散
+                    const radius = isChinese ? 2 : 0; 
+
+                    for (let i = index - radius; i <= index + radius; i++) {
+                        // 確保索引沒有超出整段文字的範圍
+                        if (i >= 0 && i < spans.length) {
+                            // 加入微小的時間差 (距離越遠越慢觸發)，創造由中心向外暈開的波浪感
+                            const delay = Math.abs(i - index) * 25;
+                            setTimeout(() => {
+                                triggerScramble(spans[i]);
+                            }, delay);
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // ========== 修復 2：Hero Dither (互動式背景遮罩) ==========
+    function initHeroDither() {
+        const canvas = document.getElementById('hero-dither-canvas');
+        if(!canvas) return;
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+        const container = canvas.parentElement;
+        
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+        const textureLoader = new THREE.TextureLoader();
+        const texture = textureLoader.load('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2564&auto=format&fit=crop');
+        
+        const uniforms = {
+            u_image: { value: texture },
+            u_resolution: { value: new THREE.Vector2(container.clientWidth, container.clientHeight) },
+            u_mouse: { value: new THREE.Vector2(0.5, 0.5) },
+            u_time: { value: 0 },
+            u_pixelRatio: { value: Math.min(window.devicePixelRatio, 2) }
+        };
+
+        const material = new THREE.ShaderMaterial({
+            uniforms,
+            vertexShader: `void main() { gl_Position = vec4(position, 1.0); }`,
+            fragmentShader: `
+                uniform sampler2D u_image;
+                uniform vec2 u_resolution;
+                uniform vec2 u_mouse;
+                uniform float u_time;
+                uniform float u_pixelRatio;
+                
+                float getDither(vec2 pos) {
+                    vec2 q = floor(mod(pos, 4.0));
+                    int idx = int(q.x + q.y * 4.0);
+                    if(idx==0) return 0.0625; if(idx==1) return 0.5625; if(idx==2) return 0.1875; if(idx==3) return 0.6875;
+                    if(idx==4) return 0.8125; if(idx==5) return 0.3125; if(idx==6) return 0.9375; if(idx==7) return 0.4375;
+                    if(idx==8) return 0.2500; if(idx==9) return 0.7500; if(idx==10) return 0.1250; if(idx==11) return 0.6250;
+                    if(idx==12) return 1.0000; if(idx==13) return 0.5000; if(idx==14) return 0.8750; return 0.3750;
+                }
+                
+                void main() {
+                    vec2 uv = gl_FragCoord.xy / u_resolution.xy;
+                    float aspect = u_resolution.x / u_resolution.y;
+                    
+                    vec2 imageUV = uv;
+                    float imgAspect = 2564.0 / 1709.0;
+                    if (aspect > imgAspect) {
+                        float s = imgAspect / aspect;
+                        imageUV.y = (uv.y - 0.5) * s + 0.5;
+                    } else {
+                        float s = aspect / imgAspect;
+                        imageUV.x = (uv.x - 0.5) * s + 0.5;
+                    }
+                    
+                    // WebGL 座標 y 方向正確讀取 (不反轉)
+                    vec4 tex = texture2D(u_image, vec2(imageUV.x, imageUV.y));
+                    vec3 archColor = mix(vec3(dot(tex.rgb, vec3(0.299, 0.587, 0.114))), tex.rgb, 0.4); 
+                    
+                    // 滑鼠跟蹤 (考慮螢幕長寬比補償)
+                    vec2 st = uv;
+                    st.x *= aspect;
+                    vec2 m = u_mouse;
+                    m.x *= aspect;
+                    
+                    float dist = distance(st, m);
+                    float dither = getDither(gl_FragCoord.xy / u_pixelRatio * 0.5); 
+                    
+                    // 擴大遮罩範圍
+                    float radius = 0.35;
+                    float softness = 0.4;
+                    float mask = smoothstep(radius + softness, radius - softness, dist);
+                    
+                    float reveal = step(dither, mask * 1.5);
+                    float finalReveal = clamp(reveal, 0.0, 0.85); // 讓最清晰的地方也不會完全失去復古網點感
+                    
+                    vec3 cloudColor = vec3(0.972, 0.976, 0.980);
+                    float noise = fract(sin(dot(uv + u_time * 0.05, vec2(12.9898, 78.233))) * 43758.5453);
+                    cloudColor -= noise * 0.015; 
+                    
+                    vec3 finalColor = mix(cloudColor, archColor, finalReveal);
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `
+        });
+
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+
+        let targetMouse = new THREE.Vector2(0.5, 0.5);
+        let currentMouse = new THREE.Vector2(0.5, 0.5);
+
+        window.addEventListener('mousemove', e => {
+            const rect = container.getBoundingClientRect();
+            // 直接抓取在螢幕的百分比座標
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = 1.0 - ((e.clientY - rect.top) / rect.height);
+            targetMouse.set(x, y);
+        });
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            uniforms.u_resolution.value.set(container.clientWidth, container.clientHeight);
+        });
+
+        function animate(t) {
+            uniforms.u_time.value = t * 0.001;
+            // Easing 追蹤滑鼠
+            currentMouse.x += (targetMouse.x - currentMouse.x) * 0.05;
+            currentMouse.y += (targetMouse.y - currentMouse.y) * 0.05;
+            uniforms.u_mouse.value.copy(currentMouse);
+            
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate(0);
+    }
+
+    // ========== 原本的背景漂浮動畫 ==========
+    function initWebGL() {
+        const canvas = document.getElementById('webgl-canvas');
+        if(!canvas) return;
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        const scene = new THREE.Scene(), camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+        const uniforms = { u_time: { value: 0 }, u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }, u_mouse: { value: new THREE.Vector2(0.5, 0.5) } };
+        const mat = new THREE.ShaderMaterial({ uniforms, transparent: true,
+            vertexShader: `void main(){gl_Position=vec4(position,1.);}`,
+            fragmentShader: `
+            uniform float u_time; uniform vec2 u_resolution; uniform vec2 u_mouse;
+            vec3 p3(vec3 x){return mod(((x*34.)+1.)*x,289.);}
+            float sn(vec2 v){const vec4 C=vec4(.211324865,.366025403,-.577350269,.024390243);
+            vec2 i=floor(v+dot(v,C.yy)),x0=v-i+dot(i,C.xx),i1;i1=(x0.x>x0.y)?vec2(1,0):vec2(0,1);
+            vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.);
+            vec3 p=p3(p3(i.y+vec3(0,i1.y,1))+i.x+vec3(0,i1.x,1));
+            vec3 m=max(.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.);m=m*m;m=m*m;
+            vec3 x=2.*fract(p*C.www)-1.,h=abs(x)-.5,ox=floor(x+.5),a0=x-ox;
+            m*=1.79284291-.85373472*(a0*a0+h*h);vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.*dot(m,g);}
+            void main(){
+                vec2 st=gl_FragCoord.xy/u_resolution.xy;
+                float asp=u_resolution.x/u_resolution.y;
+                float md=distance(st,u_mouse);
+                float mouseWarp=0.04/(md*6.0+0.3);
+                vec2 dir=(md>0.001)?normalize(st-u_mouse):vec2(0.0);
+                vec2 warpUV=st+dir*mouseWarp*0.15;
+                float n1=sn(vec2(warpUV.x*asp*1.6+u_time*0.03,warpUV.y*1.6+u_time*0.028));
+                float n2=sn(vec2(warpUV.x*asp*3.2-u_time*0.045,warpUV.y*3.2-u_time*0.04));
+                float n3=sn(vec2(warpUV.x*asp*0.8+u_time*0.015,warpUV.y*0.8-u_time*0.02));
+                float nm=(n1+n2*0.6+n3*0.4)*0.5;
+                float halo=exp(-md*md*12.0)*0.35;
+                float pulse=0.5+0.5*sin(u_time*0.8);
+                float ring=smoothstep(0.22,0.18,md)*smoothstep(0.08,0.14,md)*0.15*pulse;
+                vec3 c1=vec3(0.985,0.985,0.995);
+                vec3 c2=vec3(0.92,0.93,0.97);
+                vec3 c3=vec3(0.84,0.87,0.94);
+                vec3 fc=mix(c1,c2,nm+0.5);
+                fc=mix(fc,c3,smoothstep(0.3,0.85,nm));
+                fc=mix(fc,vec3(0.88,0.91,0.98),halo+ring);
+                gl_FragColor=vec4(fc,1.0);}` });
+        scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), mat));
+        let targetMouse = new THREE.Vector2(0.5, 0.5), currentMouse = new THREE.Vector2(0.5, 0.5);
+        document.addEventListener('mousemove', e => { targetMouse.set(e.clientX / window.innerWidth, 1.0 - e.clientY / window.innerHeight); });
+        window.addEventListener('resize', () => { renderer.setSize(window.innerWidth, window.innerHeight); uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight); });
+        (function animate(t){ uniforms.u_time.value = t * .001; currentMouse.x += (targetMouse.x - currentMouse.x) * 0.04; currentMouse.y += (targetMouse.y - currentMouse.y) * 0.04; uniforms.u_mouse.value.copy(currentMouse); renderer.render(scene, camera); requestAnimationFrame(animate); })(0);
+    }
+    </script>
+</body>
+</html>

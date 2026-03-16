@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FU. | Master Selected Works</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;800&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #F8F9FA; color: #111111; font-family: 'Manrope', sans-serif; overflow-x: hidden; cursor: none; }
+        ::selection { background: rgba(17,17,17,0.9); color: #fff; }
+
+        #custom-cursor {
+            position: fixed; top: 0; left: 0; width: 12px; height: 12px;
+            background: #ffffff; border-radius: 50%; pointer-events: none; z-index: 10002;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s cubic-bezier(0.16,1,0.3,1), height 0.3s cubic-bezier(0.16,1,0.3,1), background 0.3s;
+            mix-blend-mode: difference; display: flex; align-items: center; justify-content: center; text-align: center;
+        }
+        #custom-cursor.hover { width: 60px; height: 60px; background: rgba(255,255,255,0.15); backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.6); }
+
+        .noise-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9998;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E');
+            opacity: 0.03; mix-blend-mode: multiply;
+        }
+        #webgl-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0.85; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F8F9FA; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 10px; }
+
+        /* Menu Overlay */
+        #menu-overlay { position:fixed; inset:0; z-index:10000; background:rgba(248,249,250,.97); backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); opacity:0; pointer-events:none; transition:opacity .4s ease; overflow-y:auto; }
+        #menu-overlay.open { opacity:1; pointer-events:auto; }
+        .chapter-label { font-family: 'Syncopate', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: .3em; color: rgba(0,0,0,.3); text-transform: uppercase; }
+        .menu-nav-link { display:block; font-family:'Syncopate',sans-serif; font-size:clamp(2.2rem,5vw,4.5rem); font-weight:700; color:rgba(17,17,17,.11); letter-spacing:-.02em; padding:.4rem 0; border-bottom:1px solid rgba(0,0,0,.05); transition:color .3s ease,padding-left .4s cubic-bezier(.16,1,.3,1); cursor:none; line-height:1.15; }
+        .menu-nav-link:hover { color:#111; padding-left:.75rem; }
+        .menu-sub-link { display:flex; align-items:center; gap:.5rem; font-size:11px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:rgba(17,17,17,.32); transition:color .25s; cursor:none; padding:.55rem 0; border-bottom:1px solid rgba(0,0,0,.04); }
+        .menu-sub-link:hover { color:#111; }
+
+        /* Project Cards */
+        .project-card {
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 1.75rem;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.02);
+            transition: box-shadow 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+        }
+        .project-card:hover { box-shadow: 0 24px 64px rgba(0,0,0,0.1), 0 8px 20px rgba(0,0,0,0.04); transform: translateY(-4px); }
+
+        .featured-card {
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 2rem;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.05);
+            transition: box-shadow 0.5s;
+        }
+        .featured-card:hover { box-shadow: 0 30px 80px rgba(0,0,0,0.1); }
+
+        .card-img-wrap { position: relative; overflow: hidden; }
+        .card-img-wrap img { transition: transform 1s cubic-bezier(0.16,1,0.3,1); }
+        .card-img-wrap:hover img { transform: scale(1.04); }
+        .card-img-overlay {
+            position: absolute; inset: 0; background: rgba(17,17,17,0);
+            transition: background 0.4s; display: flex; align-items: center; justify-content: center;
+        }
+        .card-img-wrap:hover .card-img-overlay { background: rgba(17,17,17,0.15); }
+
+        /* Tag chips */
+        .chip { display:inline-flex; align-items:center; padding:3px 11px; border-radius:999px; border:1px solid rgba(0,0,0,0.1); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(17,17,17,.4); }
+
+        /* Media action buttons */
+        .media-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 16px; border-radius: 999px; font-size: 9px; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase; text-decoration: none;
+            transition: all 0.25s; white-space: nowrap; cursor: none;
+        }
+        .btn-ghost { border: 1px solid rgba(0,0,0,0.14); color: #111; }
+        .btn-ghost:hover { background: #111; color: #fff; border-color: #111; }
+        .btn-video { border: 1px solid rgba(220,38,38,0.25); color: #dc2626; }
+        .btn-video:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .btn-slides { border: 1px solid rgba(37,99,235,0.25); color: #2563eb; }
+        .btn-slides:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+        .btn-pdf { border: 1px solid rgba(0,0,0,0.14); color: #555; }
+        .btn-pdf:hover { background: #333; color: #fff; border-color: #333; }
+        .btn-interactive { border: 1px solid rgba(124,58,237,0.3); color: #7c3aed; }
+        .btn-interactive:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+        .btn-canva { border: 1px solid rgba(0,196,204,0.35); color: #00a8ad; }
+        .btn-canva:hover { background: #00a8ad; color: #fff; border-color: #00a8ad; }
+
+        /* Gallery strip */
+        .gallery-strip { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:thin; scrollbar-color:rgba(0,0,0,0.12) transparent; }
+        .gallery-strip::-webkit-scrollbar { height:4px; }
+        .gallery-strip::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.12); border-radius:2px; }
+        .gallery-thumb { flex-shrink:0; width:100px; height:68px; object-fit:cover; border-radius:10px; border:1px solid rgba(0,0,0,0.06); cursor:none; transition:opacity 0.3s; }
+        .gallery-thumb:hover { opacity:0.8; }
+
+        /* p5.js sub-cards */
+        .p5-card {
+            background: rgba(255,255,255,0.9);
+            border: 1px solid rgba(0,0,0,0.07);
+            border-radius: 1.25rem; overflow: hidden; display: block; text-decoration: none;
+            transition: box-shadow 0.4s, transform 0.4s; cursor: none;
+        }
+        .p5-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.1); transform: translateY(-3px); }
+        .p5-card img { width:100%; height:140px; object-fit:cover; transition: transform 0.8s; display:block; }
+        .p5-card:hover img { transform: scale(1.04); }
+
+        /* Award badge */
+        .award-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 14px; border-radius: 999px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff; font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+        }
+
+        /* Slideshow */
+        .slideshow { position: relative; width: 100%; display: grid; }
+        .slide-img { grid-area: 1 / 1 / 2 / 2; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.2s ease-in-out; }
+        .slide-img.active { opacity: 1; }
+
+        .reveal { opacity: 0; transform: translateY(30px); }
+
+        body.lang-en .zh-only { display: none !important; }
+        body.lang-zh .en-only { display: none !important; }
+    </style>
+</head>
+<body class="antialiased">
+    <canvas id="webgl-canvas"></canvas>
+    <div class="noise-overlay"></div>
+    <div id="custom-cursor"></div>
+
+    <!-- Decorative grid lines -->
+    <div class="fixed inset-0 pointer-events-none z-0 flex justify-between px-6 md:px-20 max-w-[1920px] mx-auto w-full opacity-30">
+        <div class="w-px h-full bg-black/5"></div>
+        <div class="w-px h-full bg-black/5"></div>
+        <div class="w-px h-full bg-black/5 hidden md:block"></div>
+        <div class="w-px h-full bg-black/5 hidden md:block"></div>
+        <div class="w-px h-full bg-black/5"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 md:px-12 py-6 backdrop-blur-xl bg-white/40 border-b border-black/5 transition-all duration-300">
+        <a href="index.html" class="text-2xl font-['Syncopate'] font-bold tracking-tighter cursor-pointer magnetic text-black">FU.</a>
+        <div class="flex items-center gap-6 lg:gap-10">
+            <ul class="gap-10 text-xs uppercase tracking-[0.2em] hidden md:flex font-semibold text-black/60 items-center">
+                <li><a href="index.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Home</span><span class="zh-only">首頁</span></a></li>
+                <li><a href="projects.html" class="nav-link-active text-black transition-colors cursor-none"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a></li>
+                <li><a href="resume.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Resume</span><span class="zh-only">個人履歷</span></a></li>
+                <li><a href="contact.html" class="hover:text-black transition-colors cursor-none"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a></li>
+            </ul>
+            <div class="flex items-center gap-3">
+                <button id="lang-toggle" class="magnetic w-10 h-10 rounded-full border border-black/20 flex items-center justify-center text-[10px] font-bold text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text">EN</span>
+                </button>
+                <button id="menu-btn" class="magnetic border border-black/20 rounded-full px-6 py-2 text-xs uppercase tracking-widest text-black hover:bg-black hover:text-white transition-all duration-300 cursor-none">
+                    <span class="magnetic-text block"><span class="en-only">Menu</span><span class="zh-only">選單</span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-44 pb-10 px-6 md:px-12 w-full max-w-[1920px] mx-auto relative z-10">
+        <div class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end border-b border-black/10 pb-10">
+            <div>
+                <div class="chapter-label mb-6">
+                    <span class="en-only">POSTGRAD · NCKU · Institute of Architecture-Digital Design Group · 2023–2025</span>
+                    <span class="zh-only">研究所 · 成功大學 · 建築學系數位設計組 · 2023–2025</span>
+                </div>
+                <h1 class="text-5xl md:text-[5rem] font-['Syncopate'] font-bold leading-none title-reveal text-[#111] tracking-tight">
+                    MASTER<br><span class="text-black/25">SELECTED</span><br>WORKS
+                </h1>
+            </div>
+            <div class="mt-6 md:mt-0 text-right">
+                <p class="text-black/40 text-xs font-mono uppercase tracking-widest font-bold mb-3">
+                    <span class="en-only">(09) Projects Archived</span>
+                    <span class="zh-only">(09) 作品收錄</span>
+                </p>
+                <p class="text-black/50 text-sm font-medium max-w-xs leading-relaxed">
+                    <span class="en-only">VR / AR · AI / BIM · Interactive Art · Generative Design</span>
+                    <span class="zh-only">VR / AR · AI / BIM · 互動程式藝術 · 生成式設計</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Grid -->
+    <section class="pb-8 px-6 md:px-12 w-full max-w-[1920px] mx-auto relative z-10">
+
+        <!-- ═══ PROJECT 01: 音樂予奏 (Featured, full-width horizontal) ═══ -->
+        <article class="featured-card reveal mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[500px]">
+                <div class="card-img-wrap h-auto">
+                    <img src="https://static.wixstatic.com/media/1a29c1_bf0ab46aea7d4b65ad666a3fb3b2ca65~mv2.jpg/v1/fit/w_3000,h_3000,q_95,enc_auto/1a29c1_bf0ab46aea7d4b65ad666a3fb3b2ca65~mv2.jpg"
+                         alt="音樂予奏 VR Scene" class="w-full h-auto object-contain">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <div class="p-8 md:p-12 flex flex-col justify-center">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-4">01 · VR Architecture · 2024</div>
+                    <h2 class="text-3xl md:text-4xl font-['Syncopate'] font-bold text-[#111] mb-1 tracking-tight">
+                    <span class="zh-only">音樂予奏</span>
+                    <span class="en-only">Metaverse Music Platform</span>
+                </h2>
+                    <p class="text-sm text-black/45 font-mono mb-4 tracking-wide">
+                        <span class="en-only">VR Immersive Music-Walk Spatial Design</span>
+                        <span class="zh-only">VR 虛實音樂散步空間設計</span>
+                    </p>
+                    <p class="text-black/55 text-sm leading-relaxed font-medium mb-6">
+                        <span class="en-only">Wander through an AI-generated VR music universe while physically moving through real space. Merging physical architecture with a virtual soundscape—visitors experience generative AI's immersive audio environment by walking through a real venue.</span>
+                        <span class="zh-only">在現實世界中，遊走於 AI 自動創建的 VR 音樂宇宙。將物理空間與虛擬音樂宇宙融合，讓參觀者在真實走動中體驗生成式 AI 所創造的沉浸聲音景觀。</span>
+                    </p>
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <span class="chip">VR</span><span class="chip">Generative AI</span><span class="chip">Spatial Audio</span><span class="chip">Unity</span>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="https://www.youtube.com/watch?v=sNk3cBb2itg" target="_blank" class="media-btn btn-video magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:youtube-logo-fill"></iconify-icon> <span class="en-only">Watch Video</span><span class="zh-only">觀看影片</span></span>
+                        </a>
+                        <a href="https://1a29c1cb-9ed6-4b04-b85c-42bc4205eead.usrfiles.com/ugd/1a29c1_a3d4986a1a1e4bd0820c2b74d2867b0c.pdf" target="_blank" class="media-btn btn-pdf magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:file-pdf"></iconify-icon> <span class="en-only">Download PDF</span><span class="zh-only">下載 PDF</span></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- ═══ PROJECTS 02 + 03 (2-col grid) ═══ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+            <!-- Project 02: BIM 水之教堂 -->
+            <article class="project-card reveal">
+                <div class="card-img-wrap h-64">
+                    <img src="https://static.wixstatic.com/media/1a29c1_370e4d306b6843c2a7e4010d01fa4dc5~mv2.png/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_370e4d306b6843c2a7e4010d01fa4dc5~mv2.png"
+                         alt="BIM 水之教堂" class="w-full h-full object-cover">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <div class="p-7">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">02 · BIM · 2024</div>
+                    <h3 class="text-xl font-['Syncopate'] font-bold text-[#111] mb-1">
+                        <span class="zh-only">BIM 水之教堂</span>
+                        <span class="en-only">BIM Church on the Water</span>
+                    </h3>
+                    <p class="text-xs text-black/40 font-mono mb-3 tracking-wide">
+                        <span class="en-only">Renovation Proposal with BIM Workflow</span>
+                        <span class="zh-only">以 BIM 工作流程重構安藤忠雄水之教堂改建提案</span>
+                    </p>
+                    <p class="text-black/50 text-sm leading-relaxed mb-5">
+                        <span class="en-only">Revit + parametric design to reconstruct Tadao Ando's Church on the Water renovation proposal using a complete BIM workflow, exploring adaptive spatial transformations.</span>
+                        <span class="zh-only">Revit + 參數化設計，以 BIM 工作流程重構安藤忠雄水之教堂的改建提案，探索適應性空間轉化。</span>
+                    </p>
+                    <div class="flex gap-2 mb-5 flex-wrap"><span class="chip">Revit</span><span class="chip">Dynamo</span><span class="chip">BIM</span></div>
+                    <a href="https://docs.google.com/presentation/d/1Rv8tWn9XMI23XoWwnb-0x1nAS-Ipwye-/edit" target="_blank" class="media-btn btn-slides magnetic">
+                        <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:presentation-chart"></iconify-icon> <span class="en-only">View Slides</span><span class="zh-only">查看簡報</span></span>
+                    </a>
+                </div>
+            </article>
+
+            <!-- Project 03: 自適應衍生式設計 -->
+            <article class="project-card reveal">
+                <div class="card-img-wrap h-64">
+                    <img src="https://static.wixstatic.com/media/1a29c1_cbee65a3b98846fb91aa41f970c7598a~mv2.png/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_cbee65a3b98846fb91aa41f970c7598a~mv2.png"
+                         alt="自適應衍生式設計" class="w-full h-full object-cover">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <div class="p-7">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">03 · BIM + AI · 2024</div>
+                    <h3 class="text-xl font-['Syncopate'] font-bold text-[#111] mb-1">
+                        <span class="zh-only">自適應衍生式設計</span>
+                        <span class="en-only">Adaptive Generative Design</span>
+                    </h3>
+                    <p class="text-xs text-black/40 font-mono mb-3 tracking-wide">
+                        <span class="en-only">Adaptive Interior · BIM + AI Integration</span>
+                        <span class="zh-only">室內設計 · BIM + AI 整合</span>
+                    </p>
+                    <p class="text-black/50 text-sm leading-relaxed mb-5">
+                        <span class="en-only">Combining Grasshopper's generative logic with AI image generation, this project creates an interior spatial configuration system that automatically adapts to residents' needs.</span>
+                        <span class="zh-only">結合 Grasshopper 衍生式邏輯與生成式 AI，打造能根據居住者需求自動調整的室內空間配置系統。</span>
+                    </p>
+                    <div class="flex gap-2 mb-5 flex-wrap"><span class="chip">Grasshopper</span><span class="chip">Generative AI</span></div>
+                    <a href="https://docs.google.com/presentation/d/1F5xLuaYSIT-SiHeLrwz4aeXtj5pyYt9J/edit" target="_blank" class="media-btn btn-slides magnetic">
+                        <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:presentation-chart"></iconify-icon> <span class="en-only">View Slides</span><span class="zh-only">查看簡報</span></span>
+                    </a>
+                </div>
+            </article>
+        </div>
+
+        <!-- ═══ PROJECTS 04 + 05 (2-col grid) ═══ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+            <!-- Project 04: 安全租住秘笈 -->
+            <article class="project-card reveal">
+                <div class="card-img-wrap h-64">
+                    <img src="https://static.wixstatic.com/media/1a29c1_24bcab43e4924a2d8224b8730f0224cd~mv2.png/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_24bcab43e4924a2d8224b8730f0224cd~mv2.png"
+                         alt="安全租住秘笈" class="w-full h-full object-cover">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <div class="p-7">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">04 · Smart City · 2024</div>
+                    <h3 class="text-xl font-['Syncopate'] font-bold text-[#111] mb-1">
+                        <span class="zh-only">安全租住秘笈</span>
+                        <span class="en-only">Safe Rental Guide</span>
+                    </h3>
+                    <p class="text-xs text-black/40 font-mono mb-3 tracking-wide">
+                        <span class="en-only">BIM + AI · Smart City Big Data Analysis</span>
+                        <span class="zh-only">BIM + AI · 智慧城市大數據分析</span>
+                    </p>
+                    <p class="text-black/50 text-sm leading-relaxed mb-5">
+                        <span class="en-only">Creating a safer rental environment for everyone through big data analysis, empowering renters to make informed decisions and advancing housing justice.</span>
+                        <span class="zh-only">為所有租屋的需求者打造更佳的居住正義，透過大數據分析輔助租屋決策，實現更安全的居住環境。</span>
+                    </p>
+                    <div class="flex gap-2 mb-5 flex-wrap"><span class="chip">Big Data</span><span class="chip">Urban AI</span><span class="chip">GIS</span></div>
+                    <a href="https://docs.google.com/presentation/d/1cjlXbT07F0HLv5tlhabh7F-pxilhfMiiriFTDTYaue4/edit" target="_blank" class="media-btn btn-slides magnetic">
+                        <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:presentation-chart"></iconify-icon> <span class="en-only">View Slides</span><span class="zh-only">查看簡報</span></span>
+                    </a>
+                </div>
+            </article>
+
+            <!-- Project 05: ARCHPOSE -->
+            <article class="project-card reveal">
+                <div class="card-img-wrap h-64">
+                    <img src="https://static.wixstatic.com/media/1a29c1_07ab7b8249c94d25b0efb4330e1c69d1~mv2.png/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_07ab7b8249c94d25b0efb4330e1c69d1~mv2.png"
+                         alt="ARCHPOSE ControlNet" class="w-full h-full object-cover">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <div class="p-7">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">05 · AI Research · 2024</div>
+                    <h3 class="text-xl font-['Syncopate'] font-bold text-[#111] mb-1">ARCHPOSE</h3>
+                    <p class="text-xs text-black/40 font-mono mb-3 tracking-wide">Dancing Architecture: A ControlNet Training Project</p>
+                    <p class="text-black/50 text-sm leading-relaxed mb-5">
+                        <span class="en-only">Training a ControlNet model to translate human dance poses into architectural forms—exploring cross-domain creative possibilities of generative AI beyond image generation.</span>
+                        <span class="zh-only">訓練 ControlNet 模型將人體舞蹈姿態轉化為建築形體，探索生成式 AI 的跨域創作可能性，超越單純的圖像生成。</span>
+                    </p>
+                    <div class="flex gap-2 mb-5 flex-wrap"><span class="chip">ControlNet</span><span class="chip">LoRA</span><span class="chip">Diffusion</span></div>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="https://docs.google.com/presentation/d/1y9vayHD7bTlG2wMri-LY16FauRye-qdLsu5M7x4U1kw/edit" target="_blank" class="media-btn btn-slides magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:presentation-chart"></iconify-icon> <span class="en-only">Slides</span><span class="zh-only">簡報</span></span>
+                        </a>
+                        <a href="https://1a29c1cb-9ed6-4b04-b85c-42bc4205eead.usrfiles.com/ugd/1a29c1_d36a0a4dbfae4e958247a3adb7b118f0.pdf" target="_blank" class="media-btn btn-pdf magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:file-pdf"></iconify-icon> PDF</span>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- ═══ PROJECT 06: SafeHive (Featured, Award Winner) ═══ -->
+        <article class="featured-card reveal mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 min-h-[480px]">
+                <div class="flex flex-col">
+                    <div class="card-img-wrap flex-1 min-h-64 slideshow">
+                        <img src="https://static.wixstatic.com/media/1a29c1_00dc642a485c4d1e97e34ffdeb426c8d~mv2.png/v1/fill/w_1500,h_1000,al_c,q_95,enc_auto/1a29c1_00dc642a485c4d1e97e34ffdeb426c8d~mv2.png"
+                             alt="SafeHive 1" class="slide-img active">
+                        <img src="https://static.wixstatic.com/media/1a29c1_5ea4e9b000e0401f8faa00ee5437355f~mv2.png/v1/fill/w_1500,h_1000,al_c,q_95,enc_auto/1a29c1_5ea4e9b000e0401f8faa00ee5437355f~mv2.png"
+                             alt="SafeHive 2" class="slide-img">
+                        <img src="https://static.wixstatic.com/media/1a29c1_416cb2fbdfa0453b874df7aaacad5672~mv2.png/v1/fill/w_1500,h_1000,al_c,q_95,enc_auto/1a29c1_416cb2fbdfa0453b874df7aaacad5672~mv2.png"
+                             alt="SafeHive 3" class="slide-img">
+                        <div class="card-img-overlay"></div>
+                    </div>
+                    <!-- Gallery strip -->
+                    <div class="p-4 bg-white/60 border-t border-black/5">
+                        <div class="gallery-strip">
+                            <img src="https://static.wixstatic.com/media/1a29c1_00dc642a485c4d1e97e34ffdeb426c8d~mv2.png/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_00dc642a485c4d1e97e34ffdeb426c8d~mv2.png" alt="SafeHive 1" class="gallery-thumb">
+                            <img src="https://static.wixstatic.com/media/1a29c1_5ea4e9b000e0401f8faa00ee5437355f~mv2.png/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_5ea4e9b000e0401f8faa00ee5437355f~mv2.png" alt="SafeHive 2" class="gallery-thumb">
+                            <img src="https://static.wixstatic.com/media/1a29c1_416cb2fbdfa0453b874df7aaacad5672~mv2.png/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_416cb2fbdfa0453b874df7aaacad5672~mv2.png" alt="SafeHive 3" class="gallery-thumb">
+                        </div>
+                    </div>
+                </div>
+                <div class="p-8 md:p-12 flex flex-col justify-center">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase">06 · AI Application · 2024</div>
+                        <span class="award-badge"><iconify-icon icon="ph:trophy-fill"></iconify-icon> AI Junior Award</span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-['Syncopate'] font-bold text-[#111] mb-1 tracking-tight">SafeHive</h2>
+                    <p class="text-sm text-black/45 font-mono mb-4 tracking-wide">
+                        <span class="en-only">AI Empowers Citizens · Building a Shared Sense of Residential Safety</span>
+                        <span class="zh-only">AI 啟動市民力量，打造居住環境共好意識</span>
+                    </p>
+                    <p class="text-black/55 text-sm leading-relaxed font-medium mb-6">
+                        <span class="en-only">Simply using a smartphone, citizens can collectively build a safe and sustainable city. An AI-based dangerous building detection system, combined with a civic participation platform, makes citizens the guardians of urban safety.</span>
+                        <span class="zh-only">簡單的透過手機，即可共同打造安全、可持續發展的城市。危險建築 AI 檢測系統，結合公民參與平台，讓市民成為城市安全的守護者。</span>
+                    </p>
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <span class="chip">Computer Vision</span><span class="chip">Mobile App</span><span class="chip">Urban Safety</span>
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="https://www.youtube.com/watch?v=mNlJmhswF-g" target="_blank" class="media-btn btn-video magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:youtube-logo-fill"></iconify-icon> <span class="en-only">Video 1</span><span class="zh-only">影片 1</span></span>
+                        </a>
+                        <a href="https://www.youtube.com/watch?v=ZO-RLYK8BTY" target="_blank" class="media-btn btn-video magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:youtube-logo-fill"></iconify-icon> <span class="en-only">Video 2</span><span class="zh-only">影片 2</span></span>
+                        </a>
+                        <a href="https://docs.google.com/presentation/d/1Pl_WOuVRVhONMTWL6CB23eGkoTfdm5V_/edit" target="_blank" class="media-btn btn-slides magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:presentation-chart"></iconify-icon> <span class="en-only">Slides</span><span class="zh-only">簡報</span></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- ═══ PROJECTS 07 + 08 (2-col grid) ═══ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+
+            <!-- Project 07: AR 鬼殺隊 -->
+            <article class="project-card reveal">
+                <div class="card-img-wrap h-64">
+                    <img src="https://static.wixstatic.com/media/1a29c1_e37a0e3b845d421c9e8134143a60b361~mv2.png/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_e37a0e3b845d421c9e8134143a60b361~mv2.png"
+                         alt="AR 鬼殺隊" class="w-full h-full object-cover">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <div class="p-7">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">07 · AR Game · 2023</div>
+                    <h3 class="text-xl font-['Syncopate'] font-bold text-[#111] mb-1">AR 鬼殺隊</h3>
+                    <p class="text-xs text-black/40 font-mono mb-3 tracking-wide">
+                        <span class="en-only">Immersive Campus AR Reality Game</span>
+                        <span class="zh-only">沉浸式校園 AR 實境遊戲</span>
+                    </p>
+                    <p class="text-black/50 text-sm leading-relaxed mb-5">
+                        <span class="en-only">Legend has it, a tale once spread through NCKU's architecture department... An immersive campus AR reality game developed with Unity AR Foundation, turning the campus into a battlefield.</span>
+                        <span class="zh-only">曾經，成大建築系流傳著一個傳說……以 Unity AR Foundation 開發的沉浸式校園 AR 實境遊戲，讓校園化身戰場。</span>
+                    </p>
+                    <div class="flex gap-2 mb-5 flex-wrap"><span class="chip">Unity</span><span class="chip">AR Foundation</span><span class="chip">C#</span></div>
+                    <a href="https://www.youtube.com/watch?v=WVlMzn6679U" target="_blank" class="media-btn btn-video magnetic">
+                        <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:youtube-logo-fill"></iconify-icon> <span class="en-only">Watch Demo</span><span class="zh-only">觀看影片</span></span>
+                    </a>
+                </div>
+            </article>
+
+            <!-- Project 08: 赤壁賦 -->
+            <article class="project-card reveal">
+                <div class="card-img-wrap h-64 slideshow">
+                    <img src="https://static.wixstatic.com/media/1a29c1_3d57631a73b04598b1f2092c0fe54066~mv2.jpg/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_3d57631a73b04598b1f2092c0fe54066~mv2.jpg"
+                         alt="赤壁賦 1" class="slide-img active">
+                    <img src="https://static.wixstatic.com/media/1a29c1_7fb209c0fd464df8a7dce4c6cd8e7602~mv2.jpg/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_7fb209c0fd464df8a7dce4c6cd8e7602~mv2.jpg"
+                         alt="赤壁賦 2" class="slide-img">
+                    <img src="https://static.wixstatic.com/media/1a29c1_71694bd341024321b8a32b0edc323f29~mv2.jpg/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_71694bd341024321b8a32b0edc323f29~mv2.jpg"
+                         alt="赤壁賦 3" class="slide-img">
+                    <img src="https://static.wixstatic.com/media/1a29c1_66a64ea3f789430e8f9ad7a2b76e2106~mv2.jpg/v1/fill/w_1200,h_800,al_c,q_95,enc_auto/1a29c1_66a64ea3f789430e8f9ad7a2b76e2106~mv2.jpg"
+                         alt="赤壁賦 4" class="slide-img">
+                    <div class="card-img-overlay"></div>
+                </div>
+                <!-- Gallery strip for multiple images -->
+                <div class="px-5 pt-3 pb-0">
+                    <div class="gallery-strip">
+                        <img src="https://static.wixstatic.com/media/1a29c1_3d57631a73b04598b1f2092c0fe54066~mv2.jpg/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_3d57631a73b04598b1f2092c0fe54066~mv2.jpg" alt="赤壁賦 1" class="gallery-thumb">
+                        <img src="https://static.wixstatic.com/media/1a29c1_7fb209c0fd464df8a7dce4c6cd8e7602~mv2.jpg/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_7fb209c0fd464df8a7dce4c6cd8e7602~mv2.jpg" alt="赤壁賦 2" class="gallery-thumb">
+                        <img src="https://static.wixstatic.com/media/1a29c1_71694bd341024321b8a32b0edc323f29~mv2.jpg/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_71694bd341024321b8a32b0edc323f29~mv2.jpg" alt="赤壁賦 3" class="gallery-thumb">
+                        <img src="https://static.wixstatic.com/media/1a29c1_66a64ea3f789430e8f9ad7a2b76e2106~mv2.jpg/v1/fill/w_400,h_272,al_c,q_95,enc_auto/1a29c1_66a64ea3f789430e8f9ad7a2b76e2106~mv2.jpg" alt="赤壁賦 4" class="gallery-thumb">
+                    </div>
+                </div>
+                <div class="p-7 pt-4">
+                    <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">08 · VR Film · 2023</div>
+                    <h3 class="text-xl font-['Syncopate'] font-bold text-[#111] mb-1">
+                        <span class="zh-only">赤壁賦</span>
+                        <span class="en-only">Ode to the Red Cliff</span>
+                    </h3>
+                    <p class="text-xs text-black/40 font-mono mb-3 tracking-wide">
+                        <span class="en-only">VR Short Film · Impermanence &amp; Constancy</span>
+                        <span class="zh-only">VR 微電影 · 無常與恒常</span>
+                    </p>
+                    <p class="text-black/50 text-sm leading-relaxed mb-5">
+                        <span class="en-only">Through spatial transitions, conveying Su Shi's shifting perception of things after life's trials—illustrating the principle of change and constancy: the mountain is a mountain, is not a mountain, is a mountain again.</span>
+                        <span class="zh-only">透過空間轉達蘇軾遭遇人生波折後看物之情境變化，闡明「常」與「變」之理——見山是山，見山不是山，見山還是山。</span>
+                    </p>
+                    <div class="flex gap-2 mb-5 flex-wrap"><span class="chip">Unreal Engine</span><span class="chip">VR Film</span><span class="chip">3D</span></div>
+                    <div class="flex gap-2 flex-wrap">
+                        <a href="https://www.youtube.com/watch?v=MfhwA6Px8Rs" target="_blank" class="media-btn btn-video magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:youtube-logo-fill"></iconify-icon> <span class="en-only">Watch Film</span><span class="zh-only">觀看影片</span></span>
+                        </a>
+                        <a href="https://www.canva.com/design/DAGEgJ_H7cs/ClA_8neWGpDAwZRgJLlbmA/edit" target="_blank" class="media-btn btn-canva magnetic">
+                            <span class="magnetic-text flex items-center gap-1"><iconify-icon icon="ph:browsers"></iconify-icon> Canva</span>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <!-- ═══ PROJECT 09: 程式互動藝術 (p5.js Collection) ═══ -->
+        <article class="featured-card reveal mb-6">
+            <div class="p-8 md:p-12">
+                <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-black/8">
+                    <div>
+                        <div class="text-[9px] font-mono text-black/30 font-bold tracking-widest uppercase mb-3">09 · Creative Coding · 2023–2024</div>
+                        <h2 class="text-2xl md:text-3xl font-['Syncopate'] font-bold text-[#111] tracking-tight">
+                            <span class="en-only">Interactive Art</span>
+                            <span class="zh-only">程式互動藝術</span>
+                        </h2>
+                        <p class="text-xs text-black/40 font-mono mt-1 tracking-wide">By p5.js · OpenProcessing</p>
+                    </div>
+                    <p class="text-black/45 text-sm font-medium max-w-xs mt-4 md:mt-0 leading-relaxed">
+                        <span class="en-only">7 generative art sketches exploring the intersection of mathematics, aesthetics, and interactivity.</span>
+                        <span class="zh-only">7 件生成式互動藝術作品，探索數學、美學與互動的交集。</span>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+
+                    <!-- p5.js 01: Oddly Satisfying Things -->
+                    <a href="https://openprocessing.org/sketch/2302604" target="_blank" class="p5-card">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_cb20db72c6564d92bf1715c69b3e09a3~mv2.png/v1/fill/w_800,h_532,al_c,q_95,enc_auto/1a29c1_cb20db72c6564d92bf1715c69b3e09a3~mv2.png" alt="Oddly Satisfying Things" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">Oddly Satisfying</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed">
+                                <span class="en-only">Perfect circles drawn in frost. Click to trigger · Turn on sound!</span>
+                                <span class="zh-only">冰霜中的完美圓形。點擊觸發 · 記得開聲音！</span>
+                            </p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                    <!-- p5.js 02: Dream of Summer -->
+                    <a href="https://openprocessing.org/sketch/2285366" target="_blank" class="p5-card">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_cf86a928c0b24f33aeeda3e69708c891~mv2.png/v1/fill/w_800,h_532,al_c,q_95,enc_auto/1a29c1_cf86a928c0b24f33aeeda3e69708c891~mv2.png" alt="Dream of Summer" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">Dream of Summer</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed">
+                                <span class="en-only">Insect sounds near and far, lights merging and parting...</span>
+                                <span class="zh-only">蟲聲忽近忽遠，和燈光疊合又分開，真的睡不著...</span>
+                            </p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                    <!-- p5.js 03: 3D Dynamic Lego -->
+                    <a href="https://openprocessing.org/sketch/2300158" target="_blank" class="p5-card">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_15905c80e15e4560aa855d8ac66266da~mv2.png/v1/fill/w_800,h_532,al_c,q_95,enc_auto/1a29c1_15905c80e15e4560aa855d8ac66266da~mv2.png" alt="3D Dynamic Lego" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">3D Dynamic Lego</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed">
+                                <span class="en-only">Generative 3D Lego brick system</span>
+                                <span class="zh-only">生成式 3D 樂高積木系統</span>
+                            </p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                    <!-- p5.js 04: Degree of Pleasure -->
+                    <a href="https://openprocessing.org/sketch/2278680" target="_blank" class="p5-card">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_bcd01bf97d3c4bd9a94714b8d038cc12~mv2.png/v1/fill/w_800,h_532,al_c,q_95,enc_auto/1a29c1_bcd01bf97d3c4bd9a94714b8d038cc12~mv2.png" alt="Degree of Pleasure" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">Degree of Pleasure</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed italic">Sadness sets the stage for joy.</p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                    <!-- p5.js 05: Tetris -->
+                    <a href="https://openprocessing.org/sketch/2271787" target="_blank" class="p5-card">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_6e31c4c37c4a4fc78de878ebaa9ed4c9~mv2.png/v1/fill/w_800,h_532,al_c,q_95,enc_auto/1a29c1_6e31c4c37c4a4fc78de878ebaa9ed4c9~mv2.png" alt="Tetris Blocks" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">Tetris Blocks</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed">
+                                <span class="en-only">A refreshed take on falling tetris blocks</span>
+                                <span class="zh-only">更加清爽的俄羅斯方塊</span>
+                            </p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                    <!-- p5.js 06: Fractals -->
+                    <a href="https://openprocessing.org/sketch/2272458" target="_blank" class="p5-card">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_2db87bb05a5b45f08951ea8bfe531951~mv2.png/v1/fill/w_800,h_532,al_c,q_95,enc_auto/1a29c1_2db87bb05a5b45f08951ea8bfe531951~mv2.png" alt="Fractals" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">Fractals</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed">
+                                <span class="en-only">Generative fractal systems</span>
+                                <span class="zh-only">生成式碎形系統</span>
+                            </p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                    <!-- p5.js 07: Kandinsky's Time Machine -->
+                    <a href="https://openprocessing.org/sketch/2219212" target="_blank" class="p5-card md:col-span-2">
+                        <div style="position:relative; overflow:hidden; height:140px;">
+                            <img src="https://static.wixstatic.com/media/1a29c1_6662cf3fe1e843e182b5588eff346c08~mv2.png/v1/fill/w_1200,h_532,al_c,q_95,enc_auto/1a29c1_6662cf3fe1e843e182b5588eff346c08~mv2.png" alt="Kandinsky Time Machine" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="p-4">
+                            <p class="font-['Syncopate'] text-xs font-bold text-[#111] mb-1 leading-tight">Kandinsky's Time Machine Dial</p>
+                            <p class="text-[10px] text-black/40 leading-relaxed">
+                                <span class="en-only">A time machine dial—visual interpretation of Einstein's theory of relativity. The red second hand marks real time; the green, relativistic time-travel through wormholes.</span>
+                                <span class="zh-only">時間機器錶盤，對愛因斯坦相對論的視覺詮釋。紅色秒針計算真實時間；綠色秒針計算蟲洞中跨越的時間。</span>
+                            </p>
+                            <span class="inline-flex items-center gap-1 mt-2 text-[9px] font-bold text-violet-600 tracking-widest uppercase"><iconify-icon icon="ph:arrow-square-out"></iconify-icon> Try it</span>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+        </article>
+
+    </section>
+
+    <!-- Bottom Navigation -->
+    <section class="py-16 px-6 md:px-12 w-full max-w-[1920px] mx-auto flex justify-between items-center border-t border-black/8 relative z-10">
+        <a href="bachelor-works.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/30 hover:text-black transition-colors cursor-none">
+            <iconify-icon icon="ph:arrow-left-bold" class="magnetic-text"></iconify-icon>
+            <span class="magnetic-text"><span class="en-only">Bachelor Works</span><span class="zh-only">大學作品集</span></span>
+        </a>
+        <a href="thesis.html" class="magnetic flex items-center gap-3 text-xs uppercase tracking-widest font-bold text-black/30 hover:text-black transition-colors cursor-none">
+            <span class="magnetic-text"><span class="en-only">Master's Thesis</span><span class="zh-only">碩士論文</span></span>
+            <iconify-icon icon="ph:arrow-right-bold" class="magnetic-text"></iconify-icon>
+        </a>
+    </section>
+
+    <!-- Footer -->
+    <footer class="relative z-10 w-full overflow-hidden bg-white/80 backdrop-blur-2xl border-t border-black/5 pt-20 pb-12 mt-4 shadow-[0_-20px_40px_rgba(0,0,0,0.02)]">
+        <div class="max-w-[1920px] mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-3 gap-16 text-black/50 font-medium">
+            <div>
+                <h4 class="text-[#111] text-2xl font-['Syncopate'] font-bold mb-6">FU.</h4>
+                <p class="uppercase tracking-widest text-xs leading-loose font-bold"><span class="en-only">Architectural Innovation<br>Designer<br>Based in Taiwan</span><span class="zh-only">建築創新設計師<br>位於台灣</span></p>
+            </div>
+            <div>
+                <h4 class="text-[#111] text-sm uppercase tracking-widest font-bold mb-6 font-mono"><span class="en-only">Socials</span><span class="zh-only">社群媒體</span></h4>
+                <ul class="space-y-4 text-sm tracking-widest uppercase font-bold">
+                    <li><a href="https://www.instagram.com/fu.aqian?igsh=ZHl4NW9zZmI0NzJp" class="hover:text-black transition-colors flex items-center gap-2 w-fit magnetic"><span class="magnetic-text">Instagram</span> <iconify-icon icon="ph:arrow-up-right"></iconify-icon></a></li>
+                    <li><a href="https://github.com/QQQIIIAAANNN" class="hover:text-black transition-colors flex items-center gap-2 w-fit magnetic"><span class="magnetic-text">GitHub</span> <iconify-icon icon="ph:arrow-up-right"></iconify-icon></a></li>
+                    <li><a href="https://www.linkedin.com/in/yi-cheng-fu-18589b28a/" class="hover:text-black transition-colors flex items-center gap-2 w-fit magnetic"><span class="magnetic-text">LinkedIn</span> <iconify-icon icon="ph:arrow-up-right"></iconify-icon></a></li>
+                </ul>
+            </div>
+            <div class="md:text-right flex flex-col justify-between">
+                <div>
+                    <h4 class="text-[#111] text-sm uppercase tracking-widest font-bold mb-6 font-mono md:text-right"><span class="en-only">Get in touch</span><span class="zh-only">與我聯繫</span></h4>
+                    <a href="mailto:zx26244623@gmail.com" class="text-xl sm:text-2xl md:text-3xl text-[#111] font-['Syncopate'] hover:text-black/50 transition-colors font-bold tracking-tighter break-all">zx26244623<br>@gmail.com</a>
+                </div>
+                <p class="mt-12 text-xs font-mono uppercase tracking-widest font-bold">&copy; 2026 FU. <span class="en-only">All Rights Reserved.</span><span class="zh-only">版權所有。</span></p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // ─── Cursor ───
+            const cursor = document.getElementById('custom-cursor');
+            document.addEventListener('mousemove', (e) => {
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.15, ease: "power2.out" });
+            });
+            document.querySelectorAll('a, button, .magnetic').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+            });
+
+            // ─── Magnetic buttons ───
+            document.querySelectorAll('.magnetic').forEach(btn => {
+                btn.addEventListener('mousemove', function(e) {
+                    const rect = btn.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    gsap.to(btn, { x: x * 0.4, y: y * 0.4, duration: 0.3, ease: "power2.out" });
+                    const text = btn.querySelector('.magnetic-text');
+                    if(text) gsap.to(text, { x: x * 0.2, y: y * 0.2, duration: 0.3, ease: "power2.out" });
+                });
+                btn.addEventListener('mouseleave', function() {
+                    gsap.to(btn, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1, 0.3)" });
+                    const text = btn.querySelector('.magnetic-text');
+                    if(text) gsap.to(text, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1, 0.3)" });
+                });
+            });
+
+            // ─── GSAP ScrollTrigger ───
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.from('.title-reveal', { y: 60, opacity: 0, duration: 1.2, ease: "power4.out", delay: 0.3 });
+            gsap.utils.toArray('.reveal').forEach((el, i) => {
+                gsap.to(el, {
+                    scrollTrigger: { trigger: el, start: "top 88%" },
+                    y: 0, opacity: 1, duration: 0.9, delay: (i % 2) * 0.1, ease: "power3.out"
+                });
+            });
+
+            // ─── Menu Overlay ───
+            const menuBtn = document.getElementById('menu-btn');
+            const menuOverlay = document.getElementById('menu-overlay');
+            const menuClose = document.getElementById('menu-close');
+            if(menuBtn) menuBtn.addEventListener('click', e => { e.stopPropagation(); menuOverlay.classList.add('open'); document.body.style.overflow = 'hidden'; });
+            if(menuClose) menuClose.addEventListener('click', () => { menuOverlay.classList.remove('open'); document.body.style.overflow = ''; });
+            document.addEventListener('keydown', e => { if(e.key === 'Escape' && menuOverlay && menuOverlay.classList.contains('open')) { menuOverlay.classList.remove('open'); document.body.style.overflow = ''; } });
+
+            // ─── Language Switcher ───
+            const langToggle = document.getElementById('lang-toggle');
+            let currentLang = localStorage.getItem('pref-lang') || 'en';
+            function applyLang() {
+                document.body.classList.remove('lang-en', 'lang-zh');
+                document.body.classList.add('lang-' + currentLang);
+                if(langToggle) {
+                    const textSpan = langToggle.querySelector('.magnetic-text');
+                    if(textSpan) textSpan.innerText = currentLang === 'en' ? '中' : 'EN';
+                }
+            }
+            applyLang();
+            if(langToggle) {
+                langToggle.addEventListener('click', () => {
+                    currentLang = currentLang === 'en' ? 'zh' : 'en';
+                    localStorage.setItem('pref-lang', currentLang);
+                    applyLang();
+                });
+            }
+
+            initWebGLBackground();
+
+            // ─── Auto Slideshow Logic ───
+            document.querySelectorAll('.slideshow').forEach(slideshow => {
+                const slides = slideshow.querySelectorAll('.slide-img');
+                if (slides.length > 1) {
+                    let current = 0;
+                    setInterval(() => {
+                        slides[current].classList.remove('active');
+                        current = (current + 1) % slides.length;
+                        slides[current].classList.add('active');
+                    }, 2500); // 2.5s crossfade interval
+                }
+            });
+        });
+
+        function initWebGLBackground() {
+            const canvas = document.getElementById('webgl-canvas');
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const uniforms = { u_time: { value: 0.0 }, u_resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) } };
+            const material = new THREE.ShaderMaterial({
+                uniforms,
+                vertexShader: `void main() { gl_Position = vec4(position, 1.0); }`,
+                fragmentShader: `
+                    uniform float u_time; uniform vec2 u_resolution;
+                    vec3 permute(vec3 x){return mod(((x*34.0)+1.0)*x,289.0);}
+                    float snoise(vec2 v){
+                      const vec4 C=vec4(0.211324865405187,0.366025403784439,-0.577350269189626,0.024390243902439);
+                      vec2 i=floor(v+dot(v,C.yy));vec2 x0=v-i+dot(i,C.xx);vec2 i1;
+                      i1=(x0.x>x0.y)?vec2(1.0,0.0):vec2(0.0,1.0);
+                      vec4 x12=x0.xyxy+C.xxzz;x12.xy-=i1;i=mod(i,289.0);
+                      vec3 p=permute(permute(i.y+vec3(0.0,i1.y,1.0))+i.x+vec3(0.0,i1.x,1.0));
+                      vec3 m=max(0.5-vec3(dot(x0,x0),dot(x12.xy,x12.xy),dot(x12.zw,x12.zw)),0.0);
+                      m=m*m;m=m*m;vec3 x=2.0*fract(p*C.www)-1.0;vec3 h=abs(x)-0.5;
+                      vec3 ox=floor(x+0.5);vec3 a0=x-ox;
+                      m*=1.79284291400159-0.85373472095314*(a0*a0+h*h);
+                      vec3 g;g.x=a0.x*x0.x+h.x*x0.y;g.yz=a0.yz*x12.xz+h.yz*x12.yw;return 130.0*dot(m,g);}
+                    void main(){
+                        vec2 st=gl_FragCoord.xy/u_resolution.xy;st.x*=u_resolution.x/u_resolution.y;
+                        float n=snoise(vec2(st.x*1.0+u_time*0.025,st.y*1.0+u_time*0.025));
+                        float n2=snoise(vec2(st.x*2.0-u_time*0.04,st.y*2.0-u_time*0.04));
+                        float nm=(n+n2)*0.5;
+                        vec3 c1=vec3(0.98,0.98,0.99);vec3 c2=vec3(0.94,0.95,0.97);vec3 c3=vec3(0.88,0.88,0.90);
+                        vec3 fc=mix(c1,c2,nm+0.5);fc=mix(fc,c3,smoothstep(0.4,0.9,nm));
+                        gl_FragColor=vec4(fc,1.0);}`,
+                transparent: true
+            });
+            scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+            window.addEventListener('resize', () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
+            });
+            function animate(time) { uniforms.u_time.value = time * 0.001; renderer.render(scene, camera); requestAnimationFrame(animate); }
+            requestAnimationFrame(animate);
+        }
+    </script>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div class="min-h-screen flex flex-col px-8 md:px-16 py-10">
+            <div class="flex justify-between items-center max-w-5xl mx-auto w-full">
+                <a href="index.html" class="text-2xl font-['Syncopate'] font-bold text-black tracking-tighter cursor-none flex items-baseline gap-3">
+                    <span>FU.</span>
+                    <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-black/40">Resume &amp; Portfolio</span>
+                </a>
+                <button id="menu-close" class="w-11 h-11 rounded-full border border-black/15 flex items-center justify-center text-black/40 hover:text-black hover:border-black transition-all cursor-none">
+                    <iconify-icon icon="ph:x-bold" class="text-base"></iconify-icon>
+                </button>
+            </div>
+            <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 content-center max-w-5xl mt-16 mx-auto w-full">
+                <div>
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Pages</span><span class="zh-only">頁面</span></div>
+                    <nav>
+                        <a href="index.html" class="menu-nav-link"><span class="en-only">Home</span><span class="zh-only">首頁</span></a>
+                        <a href="projects.html" class="menu-nav-link"><span class="en-only">Projects</span><span class="zh-only">專案作品</span></a>
+                        <a href="resume.html" class="menu-nav-link"><span class="en-only">Résumé</span><span class="zh-only">個人履歷</span></a>
+                        <a href="contact.html" class="menu-nav-link"><span class="en-only">Contact</span><span class="zh-only">聯絡我</span></a>
+                    </nav>
+                </div>
+                <div class="lg:pt-16">
+                    <div class="text-[9px] font-mono text-black/20 font-bold tracking-[.3em] uppercase mb-8"><span class="en-only">Project Details</span><span class="zh-only">專案詳情</span></div>
+                    <nav>
+                        <a href="graduation-project.html" class="menu-sub-link"><span class="en-only">Graduation Project</span><span class="zh-only">畢業設計</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="bachelor-works.html" class="menu-sub-link"><span class="en-only">Selected Works (Bachelor)</span><span class="zh-only">大學作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="master-works.html" class="menu-sub-link" style="color:#111;"><span class="en-only">Selected Works (Master)</span><span class="zh-only">研究所作品集</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                        <a href="thesis.html" class="menu-sub-link"><span class="en-only">Master's Thesis</span><span class="zh-only">碩士論文</span> <iconify-icon icon="ph:arrow-up-right-bold" class="text-sm ml-auto"></iconify-icon></a>
+                    </nav>
+                    <div class="mt-12 pt-8 border-t border-black/6">
+                        <p class="text-[10px] font-mono text-black/20 uppercase tracking-widest font-bold"><span class="en-only">Based in Taiwan · Architectural Innovation Designer</span><span class="zh-only">台灣 · 建築創新設計師</span></p>
+                        <a href="mailto:zx26244623@gmail.com" class="mt-3 block text-xs font-mono text-black/35 hover:text-black transition-colors cursor-none">zx26244623@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

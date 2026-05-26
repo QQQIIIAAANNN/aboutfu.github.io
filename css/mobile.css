@@ -1,0 +1,342 @@
+@media (hover: none), (pointer: coarse) {
+  body {
+    cursor: auto !important;
+  }
+
+  #custom-cursor {
+    display: none !important;
+  }
+
+  a,
+  button,
+  [onclick],
+  .magnetic,
+  .cursor-none {
+    cursor: pointer !important;
+  }
+}
+
+#hero-section h1.absolute {
+  display: none !important;
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: 88px;
+  }
+
+  body {
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .noise-overlay {
+    opacity: 0.018 !important;
+  }
+
+  #webgl-canvas {
+    opacity: 0.42 !important;
+  }
+
+  nav.fixed.top-0 {
+    padding: 0.875rem 1rem !important;
+  }
+
+  nav.fixed.top-0 > a {
+    font-size: 1.35rem !important;
+    line-height: 1 !important;
+  }
+
+  nav.fixed.top-0 .gap-3 {
+    gap: 0.5rem !important;
+  }
+
+  #lang-toggle {
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    flex: 0 0 2.25rem !important;
+  }
+
+  #menu-btn {
+    min-height: 2.25rem !important;
+    padding: 0.5rem 0.875rem !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  #menu-overlay > div {
+    min-height: 100svh !important;
+    padding: 1.25rem 1rem 2rem !important;
+  }
+
+  #menu-overlay .flex-1 {
+    align-content: start !important;
+    margin-top: 3rem !important;
+    gap: 2.25rem !important;
+  }
+
+  #menu-overlay a.text-2xl span.text-\[10px\] {
+    display: none !important;
+  }
+
+  .menu-nav-link {
+    font-size: clamp(2rem, 12vw, 3.2rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: 0 !important;
+    padding: 0.55rem 0 !important;
+  }
+
+  .menu-sub-link {
+    min-height: 2.75rem !important;
+    font-size: 0.68rem !important;
+    letter-spacing: 0.11em !important;
+  }
+
+  section[class*="px-6"],
+  footer[class*="px-6"],
+  div[class*="px-6"][class*="mx-auto"],
+  .max-w-\[1920px\],
+  .max-w-\[1600px\],
+  .max-w-\[1400px\],
+  .max-w-\[1200px\],
+  .max-w-6xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  section[class*="pt-44"],
+  section[class*="pt-40"] {
+    padding-top: 7rem !important;
+  }
+
+  section[class*="py-32"],
+  section[class*="py-24"],
+  section[class*="py-20"],
+  section[class*="py-16"] {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+  }
+
+  section[class*="pb-32"] {
+    padding-bottom: 4rem !important;
+  }
+
+  footer[class*="pt-20"] {
+    padding-top: 3.5rem !important;
+  }
+
+  .title-reveal,
+  h1[class*="Syncopate"] {
+    font-size: clamp(2.85rem, 13.5vw, 4.25rem) !important;
+    line-height: 0.98 !important;
+    letter-spacing: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  h2[class*="Syncopate"],
+  h3[class*="Syncopate"] {
+    font-size: clamp(1.75rem, 8.5vw, 2.75rem) !important;
+    line-height: 1.08 !important;
+    letter-spacing: 0 !important;
+    overflow-wrap: anywhere;
+  }
+
+  p,
+  li {
+    font-size: clamp(0.95rem, 3.8vw, 1.05rem);
+    line-height: 1.75;
+  }
+
+  p[class*="tracking-widest"],
+  div[class*="tracking-widest"],
+  span[class*="tracking-widest"],
+  [class*="tracking-\[0.3em\]"],
+  [class*="tracking-\[0.4em\]"] {
+    letter-spacing: 0.12em !important;
+  }
+
+  .glass-panel,
+  .project-card,
+  .featured-card,
+  .book-page {
+    border-radius: 1.25rem !important;
+  }
+
+  .glass-panel[class*="p-10"],
+  .glass-panel[class*="p-8"],
+  .book-page[class*="p-8"],
+  .book-page[class*="p-10"],
+  .featured-card [class*="p-10"],
+  .project-card [class*="p-6"] {
+    padding: 1.25rem !important;
+  }
+
+  .grid {
+    row-gap: 2rem !important;
+  }
+
+  article[class*="grid"] {
+    gap: 1.75rem !important;
+  }
+
+  [class*="gap-40"] {
+    gap: 4rem !important;
+  }
+
+  [class*="gap-16"],
+  [class*="gap-24"],
+  [class*="gap-28"] {
+    gap: 2.5rem !important;
+  }
+
+  [class*="mb-32"] {
+    margin-bottom: 4rem !important;
+  }
+
+  [class*="mb-24"],
+  [class*="mb-20"],
+  [class*="mb-16"] {
+    margin-bottom: 3rem !important;
+  }
+
+  [class*="mt-20"] {
+    margin-top: 4.5rem !important;
+  }
+
+  [class*="rounded-\[2.5rem\]"],
+  [class*="rounded-\[2rem\]"] {
+    border-radius: 1.25rem !important;
+  }
+
+  [class*="h-\[60vh\]"] {
+    height: min(52vh, 420px) !important;
+    min-height: 280px !important;
+  }
+
+  [class*="w-\[60vh\]"] {
+    width: min(82vw, 360px) !important;
+    height: min(82vw, 360px) !important;
+  }
+
+  [class*="h-screen"] {
+    min-height: 100svh !important;
+    height: auto !important;
+  }
+
+  #hero-section {
+    min-height: 100svh !important;
+    padding: 6.5rem 1rem 3rem !important;
+  }
+
+  #hero-section .z-10 {
+    margin-top: 0 !important;
+    width: 100% !important;
+  }
+
+  #hero-section .flex.gap-6 {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.875rem !important;
+    padding: 0 0.5rem;
+  }
+
+  #hero-section .flex.gap-6 a {
+    width: 100%;
+    justify-content: center;
+    min-height: 3.25rem;
+  }
+
+  .marquee-container {
+    font-size: clamp(4rem, 22vw, 6.5rem) !important;
+    margin-bottom: 3rem !important;
+  }
+
+  .scatter-container {
+    height: 360px !important;
+  }
+
+  .scatter-img {
+    width: 52% !important;
+    max-width: 210px !important;
+    border-width: 4px !important;
+  }
+
+  .story-section {
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  .story-section > .sticky {
+    position: relative !important;
+    height: 78svh !important;
+    min-height: 520px !important;
+  }
+
+  .story-section .absolute.inset-0.flex {
+    position: relative !important;
+    inset: auto !important;
+    padding: 1rem !important;
+    pointer-events: auto !important;
+  }
+
+  .story-section .max-w-md {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .expand-btn {
+    right: 1rem !important;
+    bottom: 1rem !important;
+    padding: 0.75rem !important;
+  }
+
+  .expand-btn span {
+    display: none !important;
+  }
+
+  #book-viewer .book-title {
+    top: 1.2rem !important;
+    left: 1rem !important;
+    right: 4.5rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  #book-viewer .btn-close {
+    top: 1rem !important;
+    right: 1rem !important;
+  }
+
+  #book-viewer .btn-prev {
+    left: 0.75rem !important;
+  }
+
+  #book-viewer .btn-next {
+    right: 0.75rem !important;
+  }
+
+  #book-viewer .book-pagination {
+    bottom: 1rem !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .title-reveal,
+  h1[class*="Syncopate"] {
+    font-size: clamp(2.5rem, 12vw, 3.4rem) !important;
+  }
+
+  h2[class*="Syncopate"],
+  h3[class*="Syncopate"] {
+    font-size: clamp(1.55rem, 8vw, 2.15rem) !important;
+  }
+
+  #menu-btn {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  [class*="h-\[60vh\]"] {
+    min-height: 250px !important;
+  }
+}
